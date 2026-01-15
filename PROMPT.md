@@ -1,49 +1,39 @@
-- Voy a hacer mi trabajo de fin de curso que consta de lo siguiente:
+- Estoy desarrollando una aplicacion para mi trabajo de fin de cursoen Golang llamada vanished-rooms. Esta es una aplicación de mensajeria basada en rooms. Será en CLI mediante la libreria Cobra. Esta enfocada en la privadacid maxima.
 
+- Será puro TCP y la encriptación se realizara mediante intercambio de claves RSA.
 
-- App en golang CLI: será una chat room enfocada en la privacidad maxima via TCP. Tendrá una base de datos sqlite3 no 
-persistente, es decir, se ejecutrara en RAM y se eliminará.
+- El cliente al inicializar la app entregara el path de su clave privada, e.g -> ./vanished-rooms -u user -p pass -i <path-id-privada -> se obtendra la clave publica y el servidor registrara al usuario.
+- Cuando los usuarios entren a una misma room el servidor enviara la clave publica de cada una el resto de usuarios para llevar a cabo la encriptacion.
 
-- La encriptacón se hara mediante claves publicas y privadas de cada usuario
+- La base de datos es será sqlite3 configurada de forma no persistente (en memoria)
 
-- Herramientas / librerias:  onion(tor), crypto, CobraCLI, Bubble tea, Testify, net ... etc
+- Como herramientas usar: CobraCLI, BubbleTea, Delve, sqlite3. Como IDE uso nvim.
 
-    
-Por ahora la estructura del proyecto será asi:
+- Esta es la estructura del proyecto actualmente:
 
-/vanished-rooms
-├── cmd/                # Entry points de Cobra
-│   ├── root.go
-│   ├── client.go       # Comando para iniciar el cliente
-│   └── server.go       # Comando para iniciar el servidor/retransmitidor
-├── internal/           # Código privado que no quieres que otros importen
-│   ├── crypto/         # RSA + AES (Tu lógica de privacidad)
-│   ├── storage/        # Lógica de SQLite
-│   ├── network/        # Protocolo de comunicación y Tor
-|   ├── ui/             # Estetica cmd , Bubble Tea  UI
+tree
+├── cmd
+│   ├── client.go
+│   ├── root.go
+│   └── server.go
 ├── go.mod
-└── main.go             # Solo llama a cmd.Execute()
+├── go.sum
+├── internal
+│   ├── crypto
+│   ├── network
+│   │   ├── client.go
+│   │   └── server.go
+│   └── storage
+├── main.go
+├── PROMPT.md
+├── README.md
+├── ui
+└── vanished-rooms
 
-- Te adjunto foto del diagrama de secuencia (es un boceto)
+- Te iré adjuntando diagramas de secuencia, de clase etc para entender mejor el contexto.
 
 - De ti espero:
-    - Opininones y consejos
-    - Que no me generes nada que yo no te pida, el trabajo lo quiero hacer yo.
+  - Opiniones y consejos
+  - Que no me generes nada que yo no te pida, el trabajo lo quiero hacer yo.
 
-- Ahora mismo quiero centrarme en la 1º feature:
-
-/vanished-rooms
-├── cmd/                # Entry points de Cobra
-│   ├── root.go
-│   ├── client.go       # Comando para iniciar el cliente
-│   └── server.go       # Comando para iniciar el servidor/retransmitidor
-
-> - **Servidor:** Crear un servidor TCP simple en Go que reciba un mensaje y lo reenvíe a todos los conectados.
-    
->- **Cliente:**  que se conecte a la IP del servidor y permita escribir en la terminal.
-
-> - Implementar **Cobra**
-    
-> - **Resultado:** Un chat funcional, pero totalmente inseguro (texto plano)
-
-
+- Ahora mismo estoy trabajando en la siguiente feature: "añadir feature"

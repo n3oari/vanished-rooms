@@ -4,7 +4,7 @@ import "github.com/spf13/cobra"
 
 var rootCmd = &cobra.Command{
 	Use:   "vanished-rooms",
-	Short: "Chat enfocado en privacidad",
+	Short: "Chat room focused on privacy",
 }
 
 // Execute añade todos los comandos hijos al comando raíz y lo ejecuta.

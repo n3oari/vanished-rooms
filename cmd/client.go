@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"vanished-rooms/internal/network" // Importas tu lógica interna
+	"vanished-rooms/internal/network"
 
 	"github.com/spf13/cobra"
 )
@@ -15,7 +15,6 @@ var clientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "Ejecuta el cliente",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Llamas a la función del OTRO client.go (el de internal)
 		network.StartClient("localhost:8080", username, password)
 	},
 }

@@ -5,95 +5,93 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 	"sync"
+
+	"vanished-rooms/internal/ui"
 
 	"github.com/google/uuid"
 )
 
 type Server struct {
-	clients map[net.Conn]bool // permitira hacer Broadcast
-	mu      sync.Mutex        //
+	clients map[string]net.Conn
+	mu      sync.Mutex
 }
 
-// ------ //
-
 func StartServer(port string) {
-
+	ui.PrintBanner()
 	sv := &Server{
-		clients: make(map[net.Conn]bool),
+		clients: make(map[string]net.Conn),
 	}
+
 	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
-		log.Println(err)
+		log.Println("Error starting server:", err)
 		return
 	}
 	defer listener.Close()
 
-	log.Printf("[+] Vanished Rooms servers listening in port: %s...\n", port)
+	log.Printf("[+] Vanished Rooms server listening on port: %s...\n", port)
 
 	for {
 		conn, err := listener.Accept()
-
 		if err != nil {
-			log.Println(err)
+			log.Println("Error accepting connection:", err)
 			continue
 		}
 		go sv.handleConnection(conn)
 	}
-
 }
-
-// ------- //
 
 func generateUUID() string {
 	return uuid.New().String()
-
 }
 
-// ------- //
+func (sv *Server) handleConnection(conn net.Conn) {
+	// Capture client's network information
+	remoteAddr := conn.RemoteAddr().String()
+	clientID := generateUUID()
 
-func (s *Server) handleConnection(conn net.Conn) {
-	scanner := bufio.NewScanner(conn) // Primera declaración: OK
-
+	scanner := bufio.NewScanner(conn)
 	var username string
+
 	if scanner.Scan() {
 		username = scanner.Text()
-		fmt.Printf("[+] User %s connected with ID: %s\n", username, generateUUID())
+		formatedUsername := strings.TrimSpace(username)
+		fmt.Printf("[+] User '%s' connected. IP: %s | ID: %s\n", formatedUsername, remoteAddr, clientID)
 	}
-
-	s.mu.Lock()
-	s.clients[conn] = true
-	s.mu.Unlock()
+	// DEBUG HERE
+	sv.mu.Lock()
+	sv.clients[clientID] = conn
+	sv.mu.Unlock()
 
 	defer func() {
-		s.mu.Lock()
-		delete(s.clients, conn)
-		s.mu.Unlock()
+		sv.mu.Lock()
+		delete(sv.clients, clientID)
+		sv.mu.Unlock()
 		conn.Close()
-		fmt.Printf("[-] Connection closed: %s\n", conn.RemoteAddr().String())
+		fmt.Printf("[-] Connection closed: %s (ID: %s)\n", remoteAddr, clientID)
 	}()
 
-	// scanner := bufio.NewScanner(conn) <-- BORRA ESTA LÍNEA
-
-	// El scanner ya sabe que debe seguir leyendo de 'conn'
 	for scanner.Scan() {
 		msg := scanner.Text()
-		fmt.Printf("[+] Message recieved from %s -> %s\n", username, msg)
-		s.broadcast(msg, conn)
+		formattedMsg := fmt.Sprintf("[%s]: %s", username, msg)
+		// In production, we should avoid logging the message content for privacy
+		fmt.Printf("[LOG] From (ID: %s): %s\n", clientID, formattedMsg)
+		sv.broadcast(formattedMsg, conn)
 	}
 }
 
-// ------ //
+func (sv *Server) broadcast(msg string, sender net.Conn) {
+	sv.mu.Lock()
+	defer sv.mu.Unlock()
 
-func (s *Server) broadcast(msg string, sender net.Conn) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for client := range s.clients {
-		if client != sender {
-			fmt.Fprintln(client, msg)
+	for id, clientConn := range sv.clients {
+		if clientConn != sender {
+			_, err := fmt.Fprintln(clientConn, msg)
+			if err != nil {
+				log.Printf("[!] Could not send message to client %s: %v\n", id, err)
+			}
 		}
 	}
 }
-
-// ------ //
