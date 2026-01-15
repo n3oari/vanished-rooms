@@ -1,4 +1,3 @@
 PROMPT.md
 .gitignore
-*.db
 .env
