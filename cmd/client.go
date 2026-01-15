@@ -1,36 +1,31 @@
-package main
+package cmd
 
 import (
-	"bufio"
-	"fmt"
-	"log"
-	"net"
-	"os"
+	"vanished-rooms/internal/network" // Importas tu lógica interna
+
+	"github.com/spf13/cobra"
 )
 
-// cambiar a servidor privado cuando este terminada la app
-var addr = "localhost:8080"
+var (
+	username string
+	password string
+)
 
-func main() {
+var clientCmd = &cobra.Command{
+	Use:   "client",
+	Short: "Ejecuta el cliente",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Llamas a la función del OTRO client.go (el de internal)
+		network.StartClient("localhost:8080", username, password)
+	},
+}
 
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		log.Fatalf("No se pudo conectar al servidor: %v", err)
-	}
-	defer conn.Close()
+func init() {
+	rootCmd.AddCommand(clientCmd)
 
-	fmt.Println("[+] Connected to server. Say something :)")
-
-	go func() {
-		scanner := bufio.NewScanner(conn)
-		for scanner.Scan() {
-			fmt.Println("[+] Message recieved from other user ----------------> ", scanner.Text())
-		}
-	}()
-
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		fmt.Fprintln(conn, scanner.Text())
-	}
+	clientCmd.Flags().StringVarP(&username, "username", "u", "", "Nombre de usuario para el cliente")
+	clientCmd.Flags().StringVarP(&password, "password", "p", "", "Contraseña para el cliente")
+	clientCmd.MarkFlagRequired("username")
+	clientCmd.MarkFlagRequired("password")
 
 }

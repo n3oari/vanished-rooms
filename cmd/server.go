@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"bufio"
@@ -6,6 +6,8 @@ import (
 	"log"
 	"net"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 type Server struct {
@@ -43,11 +45,27 @@ func StartServer(port string) {
 
 // ------- //
 
+func generateUUID() string {
+	return uuid.New().String()
+
+}
+
+// ------- //
+
 func (s *Server) handleConnection(conn net.Conn) {
+
+	scanner := bufio.NewScanner(conn)
+	var username string
+
+	if scanner.Scan() {
+		username = scanner.Text()
+		fmt.Printf("[+] User %s connected with ID %s\n", username, generateUUID())
+	}
+
 	s.mu.Lock()
 	s.clients[conn] = true
 	s.mu.Unlock()
-	fmt.Printf("[+] New connection: %s\n", conn.RemoteAddr().String())
+
 	// cuando la funcion termine, es decir, el cliente se desconecte, eliminamos al cliente y su conexion
 	defer func() {
 		s.mu.Lock()
@@ -57,7 +75,6 @@ func (s *Server) handleConnection(conn net.Conn) {
 		fmt.Printf("[-] Connection closed: %s\n", conn.RemoteAddr().String())
 	}()
 
-	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		msg := scanner.Text()
 		fmt.Printf("[+] Message recieved from client -> %s\n", msg)
@@ -80,8 +97,3 @@ func (s *Server) broadcast(msg string, sender net.Conn) {
 }
 
 // ------ //
-
-func main() {
-	StartServer("8080")
-
-}
