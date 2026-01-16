@@ -120,9 +120,8 @@ func (sv *Server) handleConnection(conn net.Conn) {
 		return
 	}
 
-	fmt.Printf("[+] User %s connected\n", User.Username)
-
 	for scanner.Scan() {
+		//	fmt.Printf("[+] User %s connected\n", User.Username)
 		msg := strings.TrimSpace(scanner.Text())
 		if msg == "" {
 			continue
@@ -133,7 +132,7 @@ func (sv *Server) handleConnection(conn net.Conn) {
 			continue
 		}
 		// In production, we should avoid logging the message content for privacy
-		fmt.Printf("[LOG] From (ID: %s): %s\n", UUID, msg)
+		fmt.Printf("[LOG][%s][%s]: %s\n", UUID, userIn, msg)
 		sv.broadcast(msg, conn)
 	}
 }
@@ -185,9 +184,32 @@ func handleInternalCommand(sv *Server, conn net.Conn, User *storage.Users, msg s
 		// 3. Confirmación de éxito
 		fmt.Fprintf(conn, "[+] Success! You have joined the room: %s\n", roomName)
 
+	case "/rooms":
+		rooms, err := sv.SQLiteRepository.ListAllRooms()
+		if err != nil {
+			conn.Write([]byte("Error retrieving rooms\n"))
+			return
+		}
+
+		var sb strings.Builder
+		sb.WriteString("ROOMS_LIST_START\n")
+		for _, room := range rooms {
+			sb.WriteString("- ")
+			sb.WriteString(room.Name)
+			sb.WriteString("\n")
+		}
+		//	sb.WriteString("EOF\n")
+
+		_, err = conn.Write([]byte(sb.String()))
+		if err != nil {
+			log.Print("Error sending data to client")
+		}
+
 	case "/help":
 		fmt.Fprintln(conn, "[?] Available commands:")
-		fmt.Fprintln(conn, "    /create -n <name> -p <pass>  -> Create a new room")
+		fmt.Fprintln(conn, "    /rooms                       -> List all rooms")
+		fmt.Fprintln(conn, "    /create -n <name> -p <pass>  -> Create a new room and join")
+		fmt.Fprintln(conn, "    /join -n <name> -p <pass>    -> Join a room")
 		fmt.Fprintln(conn, "    /help                        -> Show this message")
 		fmt.Fprintln(conn, "    /quit                        -> Disconnect and Remove user permanetly")
 	case "/quit":

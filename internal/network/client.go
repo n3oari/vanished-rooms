@@ -28,7 +28,7 @@ func StartClient(addr, user, pass, publicKey string) {
 	go func() {
 		scanner := bufio.NewScanner(conn)
 		for scanner.Scan() {
-			fmt.Println("\n[SERVER]: Message received: ", scanner.Text())
+			fmt.Printf("\n[%s]: %s", user, scanner.Text())
 		}
 		if err := scanner.Err(); err != nil {
 			log.Println("[-] Error leyendo del servidor: %v\n", err)
