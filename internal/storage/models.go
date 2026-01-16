@@ -1,10 +1,11 @@
 package storage
 
 type Users struct {
-	UUID         string `db:"uuid"`
-	Username     string `db:"name"`
-	PasswordHash string `db:"password_hash"`
-	PublicRSAKey string `db:"public_rsa_key"`
+	UUID            string `db:"uuid"`
+	Username        string `db:"name"`
+	PasswordHash    string `db:"password_hash"`
+	PublicRSAKey    string `db:"public_rsa_key"`
+	CurrentRoomUUID string
 }
 
 type Rooms struct {

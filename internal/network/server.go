@@ -21,7 +21,7 @@ type Server struct {
 }
 
 func StartServer(port string, repository *storage.SQLiteRepository) {
-	ui.PrintBanner2()
+	ui.PrintRandomBanner()
 	sv := &Server{
 		clients:          make(map[string]net.Conn),
 		SQLiteRepository: repository,
@@ -60,14 +60,29 @@ func (sv *Server) handleConnection(conn net.Conn) {
 
 		if User.UUID != "" {
 			err := sv.SQLiteRepository.DeleteUser(User)
+
 			if err != nil {
 				fmt.Printf("[!] Error deleting from DB: %v\n", err)
 			} else {
 				fmt.Printf("[-] User deleted from DB: %s (ID: %s)\n", User.Username, UUID)
 			}
+			if User.CurrentRoomUUID != "" {
+				sv.SQLiteRepository.RemoveParticipant(User.UUID, User.CurrentRoomUUID)
+				deleted, err := sv.SQLiteRepository.DeleteRoomIfEmpty(User.CurrentRoomUUID)
+
+				if err != nil {
+					fmt.Printf("[!] Error cleaning room: %v\n", err)
+				} else if deleted {
+					fmt.Printf("[!] Vanished: Room %s was empty and has been deleted.\n", User.CurrentRoomUUID)
+				} else {
+					fmt.Printf("[-] Room %s still has participants.\n", User.CurrentRoomUUID)
+				}
+			}
 		}
+
 		conn.Close()
 		fmt.Printf("[-] Connection closed: %s (ID: %s)\n", remoteAddr, UUID)
+
 	}()
 
 	scanner := bufio.NewScanner(conn)
@@ -152,6 +167,23 @@ func handleInternalCommand(sv *Server, conn net.Conn, User *storage.Users, msg s
 		} else {
 			fmt.Fprintf(conn, "[+] Room '%s' created successfully.\n", roomName)
 		}
+	case "/join":
+		roomName := extractFlag(msg, "-n")
+		roomPass := extractFlag(msg, "-p")
+		if roomName == "" || roomPass == "" {
+			fmt.Fprintln(conn, "[!] Usage: /join -n <room_name> -p <room_password>")
+			return
+		}
+		roomID, err := sv.SQLiteRepository.JoinRoom(User.UUID, roomName, roomPass)
+		if err != nil {
+			fmt.Fprintf(conn, "[!] Failed to join room: %v\n", err)
+			return
+		}
+
+		User.CurrentRoomUUID = roomID
+
+		// 3. Confirmación de éxito
+		fmt.Fprintf(conn, "[+] Success! You have joined the room: %s\n", roomName)
 
 	case "/help":
 		fmt.Fprintln(conn, "[?] Available commands:")

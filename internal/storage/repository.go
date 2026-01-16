@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 )
 
@@ -51,11 +52,64 @@ func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error 
 	return tx.Commit()
 }
 
-func (r *SQLiteRepository) DeleteRoom(u Rooms) error {
+func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string, error) {
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return "", err
+	}
+	var roomUUID string
+	querySelect := (`SELECT uuid  FROM rooms WHERE name = ? AND password_hash = ?`)
+	err = tx.QueryRow(querySelect, nameRoom, passRoom).Scan(&roomUUID)
+
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+
+	queryInsert := `INSERT INTO participants (uuid_room, uuid_user) VALUES (?,?)`
+	_, err = tx.Exec(queryInsert, roomUUID, userUUID)
+
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+	log.Printf("[+] Transaction done! Room created and user joined successfully\n roomUUID -> %s", roomUUID)
+	err = tx.Commit()
+	return roomUUID, err
+
+}
+
+func (r *SQLiteRepository) DeleteRoom(roomUUID string) error {
 	query := `DELETE FROM rooms WHERE uuid = ?`
-	_, err := r.db.Exec(query, u.UUID)
+	_, err := r.db.Exec(query, roomUUID)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (r *SQLiteRepository) DeleteRoomIfEmpty(roomUUID string) (bool, error) {
+	var count int
+	queryCount := `SELECT COUNT(*) FROM participants WHERE uuid_room = ?`
+	err := r.db.QueryRow(queryCount, roomUUID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	if count == 0 {
+		err := r.DeleteRoom(roomUUID)
+		if err != nil {
+			return false, err
+		}
+		fmt.Printf("[+] Room with UUID %s deleted as it was empty.\n", roomUUID)
+		return true, nil
+	}
+	return false, nil
+}
+
+func (r *SQLiteRepository) RemoveParticipant(userUUID string, roomUUID string) error {
+	query := `DELETE FROM participants WHERE uuid_user = ? AND uuid_room = ?`
+	_, err := r.db.Exec(query, userUUID, roomUUID)
+	return err
 }

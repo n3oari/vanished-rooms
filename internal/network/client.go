@@ -10,7 +10,7 @@ import (
 )
 
 func StartClient(addr, user, pass, publicKey string) {
-	ui.PrintBanner2()
+	ui.PrintRandomBanner()
 
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {

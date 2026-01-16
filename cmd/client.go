@@ -29,5 +29,4 @@ func init() {
 	clientCmd.MarkFlagRequired("username")
 	clientCmd.MarkFlagRequired("password")
 	clientCmd.MarkFlagRequired("publicKey")
-
 }

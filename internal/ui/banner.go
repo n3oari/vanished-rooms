@@ -1,6 +1,11 @@
 package ui
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand/v2"
+)
+
+var banners = []string{LainBanner, LainBanner2}
 
 const LainBanner = `
 VANISHED-ROOMS 
@@ -58,4 +63,11 @@ func PrintBanner() {
 
 func PrintBanner2() {
 	fmt.Println(LainBanner2)
+}
+
+func PrintRandomBanner() {
+
+	idx := rand.IntN(len(banners))
+	fmt.Println(banners[idx])
+
 }
