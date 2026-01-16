@@ -20,7 +20,7 @@ var serverCmd = &cobra.Command{
 	Short: "Starts the vanished-rooms messaging server",
 	Long:  `Launches a TCP server to handle message broadcasting between connected clients.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		db, err := sql.Open("sqlite", `C:\vanished-rooms\internal\storage\sqlite.db`)
+		db, err := sql.Open("sqlite", `./internal/storage/sqlite.db`)
 		if err != nil {
 			log.Fatalf("[-] Error al abrir SQLite: %v", err)
 		}
