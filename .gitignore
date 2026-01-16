@@ -2,4 +2,6 @@ PROMPT.md
 .gitignore
 .env
 vanished-rooms
+internal/ui/banner.go
+
 
