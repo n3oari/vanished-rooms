@@ -19,7 +19,7 @@ type Server struct {
 }
 
 func StartServer(port string) {
-	ui.PrintBanner()
+	ui.PrintBanner2()
 	sv := &Server{
 		clients: make(map[string]net.Conn),
 	}

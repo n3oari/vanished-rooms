@@ -6,10 +6,11 @@ import (
 	"log"
 	"net"
 	"os"
+	"vanished-rooms/internal/ui"
 )
 
 func StartClient(addr string, user string, pass string) {
-
+	ui.PrintBanner()
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		log.Fatalf("No se pudo conectar al servidor: %v", err)
