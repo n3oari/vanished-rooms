@@ -5,23 +5,26 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strings"
 	"sync"
 
 	"vanished-rooms/internal/ui"
+
+	"vanished-rooms/internal/storage"
 
 	"github.com/google/uuid"
 )
 
 type Server struct {
-	clients map[string]net.Conn
-	mu      sync.Mutex
+	clients          map[string]net.Conn
+	mu               sync.Mutex
+	SQLiteRepository *storage.SQLiteRepository
 }
 
-func StartServer(port string) {
+func StartServer(port string, repository *storage.SQLiteRepository) {
 	ui.PrintBanner2()
 	sv := &Server{
-		clients: make(map[string]net.Conn),
+		clients:          make(map[string]net.Conn),
+		SQLiteRepository: repository,
 	}
 
 	listener, err := net.Listen("tcp", ":"+port)
@@ -43,44 +46,70 @@ func StartServer(port string) {
 	}
 }
 
-func generateUUID() string {
-	return uuid.New().String()
-}
+// func (r *SQLiteRepository) CreateUser(u Users) error {
+//	query := `INSERT INTO users (uuid, name , public_rsa_key) VALUES (?,?,?)`
+//_, err := r.db.Exec(query, u.UUID, u.name, u.public_rsa_key)
+//	return err
+
+// ------- //
 
 func (sv *Server) handleConnection(conn net.Conn) {
-	// Capture client's network information
 	remoteAddr := conn.RemoteAddr().String()
-	clientID := generateUUID()
+	UUID := generateUUID()
 
 	scanner := bufio.NewScanner(conn)
-	var username string
+
+	var (
+		userIn string
+		passIn string
+		keyIn  string
+	)
 
 	if scanner.Scan() {
-		username = scanner.Text()
-		formatedUsername := strings.TrimSpace(username)
-		fmt.Printf("[+] User '%s' connected. IP: %s | ID: %s\n", formatedUsername, remoteAddr, clientID)
+		userIn = scanner.Text()
+	}
+	if scanner.Scan() {
+		passIn = scanner.Text()
+	}
+	if scanner.Scan() {
+		keyIn = scanner.Text()
+	}
+
+	User := storage.Users{
+		UUID:           UUID,
+		Username:       userIn,
+		Password_hash:  passIn,
+		Public_rsa_key: keyIn,
 	}
 	// DEBUG HERE
 	sv.mu.Lock()
-	sv.clients[clientID] = conn
+	sv.clients[UUID] = conn
 	sv.mu.Unlock()
+
+	err := sv.SQLiteRepository.CreateUser(User)
+	if err != nil {
+		fmt.Printf("[!] Error saving to DB: %v\n", err)
+		return
+	}
 
 	defer func() {
 		sv.mu.Lock()
-		delete(sv.clients, clientID)
+		delete(sv.clients, UUID)
 		sv.mu.Unlock()
 		conn.Close()
-		fmt.Printf("[-] Connection closed: %s (ID: %s)\n", remoteAddr, clientID)
+		fmt.Printf("[-] Connection closed: %s (ID: %s)\n", remoteAddr, UUID)
 	}()
 
 	for scanner.Scan() {
 		msg := scanner.Text()
-		formattedMsg := fmt.Sprintf("[%s]: %s", username, msg)
+		formattedMsg := fmt.Sprintf("[%s]: %s", userIn, msg)
 		// In production, we should avoid logging the message content for privacy
-		fmt.Printf("[LOG] From (ID: %s): %s\n", clientID, formattedMsg)
+		fmt.Printf("[LOG] From (ID: %s): %s\n", UUID, formattedMsg)
 		sv.broadcast(formattedMsg, conn)
 	}
 }
+
+// ------- //
 
 func (sv *Server) broadcast(msg string, sender net.Conn) {
 	sv.mu.Lock()
@@ -94,4 +123,10 @@ func (sv *Server) broadcast(msg string, sender net.Conn) {
 			}
 		}
 	}
+}
+
+// ------- //
+
+func generateUUID() string {
+	return uuid.New().String()
 }

@@ -13,8 +13,8 @@ func NewSQLHandler(db *sql.DB) *SQLiteRepository {
 }
 
 func (r *SQLiteRepository) CreateUser(u Users) error {
-	query := `INSERT INTO users (uuid, name , public_rsa_key) VALUES (?,?,?)`
-	_, err := r.db.Exec(query, u.UUID, u.name, u.public_rsa_key)
+	query := `INSERT INTO users (uuid, name , public_rsa_key,password_hash) VALUES (?,?,?,?)`
+	_, err := r.db.Exec(query, u.UUID, u.Username, u.Public_rsa_key)
 	return err
 }
 
@@ -28,7 +28,7 @@ func (r *SQLiteRepository) DeleteUser(u Users) error {
 
 func (r *SQLiteRepository) CreateRooms(u Users) error {
 	query := `INSERT INTO rooms (uuid, name , password_hash) VALUES (?,?,?)`
-	_, err := r.db.Exec(query, u.UUID, u.name, u.password_hash)
+	_, err := r.db.Exec(query, u.UUID, u.Username, u.Password_hash)
 	return err
 }
 

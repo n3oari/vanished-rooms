@@ -1,7 +1,12 @@
 package cmd
 
 import (
+	"database/sql"
+	"log"
 	"vanished-rooms/internal/network"
+	"vanished-rooms/internal/storage"
+
+	_ "modernc.org/sqlite"
 
 	"github.com/spf13/cobra"
 )
@@ -15,12 +20,19 @@ var serverCmd = &cobra.Command{
 	Short: "Starts the vanished-rooms messaging server",
 	Long:  `Launches a TCP server to handle message broadcasting between connected clients.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		network.StartServer(port)
+		db, err := sql.Open("sqlite", `C:\vanished-rooms\internal\storage\sqlite.db`)
+		if err != nil {
+			log.Fatalf("[-] Error al abrir SQLite: %v", err)
+		}
+		defer db.Close()
+
+		repository := storage.NewSQLHandler(db)
+
+		network.StartServer(port, repository)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
-
 	serverCmd.Flags().StringVarP(&port, "port", "p", "8080", "Port to listen on for incoming TCP connections")
 }

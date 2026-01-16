@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	username string
-	password string
+	username  string
+	password  string
+	publicKey string
 )
 
 var clientCmd = &cobra.Command{
@@ -24,7 +25,9 @@ func init() {
 
 	clientCmd.Flags().StringVarP(&username, "username", "u", "", "Nombre de usuario para el cliente")
 	clientCmd.Flags().StringVarP(&password, "password", "p", "", "Contraseña para el cliente")
+	clientCmd.Flags().StringVarP(&publicKey, "publicKey", "k", "", "public key from user")
 	clientCmd.MarkFlagRequired("username")
 	clientCmd.MarkFlagRequired("password")
+	clientCmd.MarkFlagRequired("publicKey")
 
 }
