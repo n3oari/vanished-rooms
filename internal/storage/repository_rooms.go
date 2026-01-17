@@ -1,23 +1,60 @@
 package storage
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
-func (r *SQLiteRepository) CreateUser(u Users) error {
-	query := `INSERT INTO users (uuid, name, password_hash, public_rsa_key) VALUES (?,?,?,?)`
-	_, err := r.db.Exec(query, u.UUID, u.Username, u.PasswordHash, u.PublicRSAKey)
-	return err
+func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error {
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`INSERT INTO rooms (uuid, name, password_hash) VALUES (?,?,?)`,
+		room.UUID, room.Name, room.PasswordHash)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(`INSERT INTO participants (uuid_room, uuid_user) VALUES (?,?)`,
+		room.UUID, userUUID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	log.Println("[+] Transaction done! Room created and user joined successfully")
+	return tx.Commit()
 }
 
-func (r *SQLiteRepository) DeleteUser(u Users) error {
-	query := `DELETE FROM users WHERE uuid = ?`
-	_, err := r.db.Exec(query, u.UUID)
-	return err
-}
+func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string, error) {
 
-func (r *SQLiteRepository) RemoveParticipant(userUUID string, roomUUID string) error {
-	query := `DELETE FROM participants WHERE uuid_user = ? AND uuid_room = ?`
-	_, err := r.db.Exec(query, userUUID, roomUUID)
-	return err
+	tx, err := r.db.Begin()
+	if err != nil {
+		return "", err
+	}
+	var roomUUID string
+	querySelect := (`SELECT uuid  FROM rooms WHERE name = ? AND password_hash = ?`)
+	err = tx.QueryRow(querySelect, nameRoom, passRoom).Scan(&roomUUID)
+
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+
+	queryInsert := `INSERT INTO participants (uuid_room, uuid_user) VALUES (?,?)`
+	_, err = tx.Exec(queryInsert, roomUUID, userUUID)
+
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+	log.Printf("[+] Transaction done! Room created and user joined successfully\n roomUUID -> %s", roomUUID)
+	err = tx.Commit()
+	return roomUUID, err
+
 }
 
 func (r *SQLiteRepository) LeaveRoomAndDeleteRoomIfEmpty(userUUID, roomUUID string) error {
@@ -49,4 +86,39 @@ func (r *SQLiteRepository) LeaveRoomAndDeleteRoomIfEmpty(userUUID, roomUUID stri
 
 	return tx.Commit()
 
+}
+
+func (r *SQLiteRepository) DeleteRoom(roomUUID string) error {
+	query := `DELETE FROM rooms WHERE uuid = ?`
+	_, err := r.db.Exec(query, roomUUID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *SQLiteRepository) ListAllRooms() ([]Rooms, error) {
+	var rooms []Rooms
+	query := `SELECT name FROM rooms`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var room Rooms
+		err := rows.Scan(&room.Name)
+		if err != nil {
+			return nil, err
+		}
+		rooms = append(rooms, room)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return rooms, nil
 }

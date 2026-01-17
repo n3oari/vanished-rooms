@@ -8,7 +8,7 @@ import (
 	"vanished-rooms/internal/storage"
 )
 
-func (sv *Server) handleConnection(conn net.Conn) {
+func (sv *Server) HandleConnection(conn net.Conn) {
 	remoteAddr := conn.RemoteAddr().String()
 	UUID := generateUUID()
 	var User storage.Users
@@ -84,25 +84,31 @@ func (sv *Server) handleConnection(conn net.Conn) {
 	}
 
 	for scanner.Scan() {
-		//	fmt.Printf("[+] User %s connected\n", User.Username)
 		msg := strings.TrimSpace(scanner.Text())
-		roomMsg := fmt.Sprintf("[%s]: %s", User.Username, msg)
 		if msg == "" {
 			continue
 		}
 
+		// 1. OBTENER SIEMPRE LA VERSIÓN REAL DEL USUARIO
+		sv.mu.Lock()
+		u := sv.usersInRoom[UUID]
+		sv.mu.Unlock()
+
+		// 2. PROCESAR COMANDOS
 		if strings.HasPrefix(msg, "/") {
-			handleInternalCommand(sv, conn, &User, msg)
+			sv.HandleInternalCommand(conn, u, msg)
 			continue
 		}
 
-		if User.CurrentRoomUUID == "" {
-			fmt.Fprintln(conn, "[!] You need to be in a room to send messages. Use /join\n")
+		// 3. VALIDAR SALA USANDO LA VERSIÓN REAL (u)
+		if u.CurrentRoomUUID == "" {
+			fmt.Fprintln(conn, "[!] You need to be in a room to send messages. Use /join")
 			continue
 		}
 
-		// In production, we should avoid logging the message content for privacy
-		fmt.Printf("[LOG][%s][%s]: %s\n", UUID, userIn, msg)
-		sv.broadcast(roomMsg, conn, User.CurrentRoomUUID, sv.usersInRoom)
+		// 4. BROADCAST USANDO EL ID ACTUALIZADO
+		roomMsg := fmt.Sprintf("[%s]: %s", u.Username, msg)
+		fmt.Printf("[LOG][%s][%s]: %s\n", UUID, u.Username, msg)
+		sv.broadcast(roomMsg, conn, u.CurrentRoomUUID, sv.usersInRoom)
 	}
 }

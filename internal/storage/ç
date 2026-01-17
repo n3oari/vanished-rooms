@@ -8,7 +8,7 @@ import (
 	"vanished-rooms/internal/storage"
 )
 
-func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg string) {
+func handleInternalCommand(sv *Server, conn net.Conn, User *storage.Users, msg string) {
 	parts := strings.Fields(msg)
 	if len(parts) == 0 {
 		return
@@ -21,7 +21,7 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		roomPass := extractFlag(msg, "-p")
 
 		if roomName == "" || roomPass == "" {
-			fmt.Fprintln(conn, "[!] Usage: /create -n <room_name> -p <room_password>\n")
+			fmt.Fprintln(conn, "[!] Usage: /create -n <room_name> -p <room_password>")
 			return
 		}
 
@@ -48,7 +48,7 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		roomName := extractFlag(msg, "-n")
 		roomPass := extractFlag(msg, "-p")
 		if roomName == "" || roomPass == "" {
-			fmt.Fprint(conn, "[!] Usage: /join -n <room_name> -p <room_password>\n")
+			fmt.Fprintln(conn, "[!] Usage: /join -n <room_name> -p <room_password>")
 			return
 		}
 		roomID, err := sv.SQLiteRepository.JoinRoom(User.UUID, roomName, roomPass)
@@ -67,7 +67,7 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 
 	case "/users":
 		if User.CurrentRoomUUID == "" {
-			conn.Write([]byte("[!] You need to be in a room. Use <join>\n"))
+			conn.Write([]byte("[!] You need to be in a room. Use <join>"))
 			return
 		}
 		users, err := sv.SQLiteRepository.ListAllUsersInRoom(User.CurrentRoomUUID)

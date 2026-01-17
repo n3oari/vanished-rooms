@@ -26,7 +26,7 @@ func (sv *Server) broadcast(msg string, sender net.Conn, roomUUID string, allUse
 			_, err := fmt.Fprintln(clientConn, msg)
 
 			if err != nil {
-				log.Printf("[!] Error enviando mensaje a %s (ID: %s): %v\n", user.Username, id, err)
+				log.Printf("[!] Error sending the message a %s (ID: %s): %v\n", user.Username, id, err)
 			}
 		}
 

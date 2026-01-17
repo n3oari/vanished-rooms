@@ -40,7 +40,7 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 			log.Println("Error accepting connection:", err)
 			continue
 		}
-		go sv.handleConnection(conn)
+		go sv.HandleConnection(conn)
 	}
 }
 
