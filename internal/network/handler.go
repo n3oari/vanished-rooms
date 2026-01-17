@@ -13,24 +13,37 @@ func (sv *Server) handleConnection(conn net.Conn) {
 	UUID := generateUUID()
 	var User storage.Users
 
+	// when the connection ends, clean up all
 	defer func() {
 		sv.mu.Lock()
+		roomToDelete := User.CurrentRoomUUID
+
 		delete(sv.clients, UUID)
+		delete(sv.usersInRoom, UUID)
 		sv.mu.Unlock()
 
+		// remove room
+		if roomToDelete != "" {
+			err := sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(UUID, roomToDelete)
+			if err != nil {
+				fmt.Printf("[!] Error cleaning room on disconnect: %v\n", err)
+			}
+		}
+
+		// remove user
 		if User.UUID != "" {
 			err := sv.SQLiteRepository.DeleteUser(User)
 
 			if err != nil {
 				fmt.Printf("[!] Error deleting from DB: %v\n", err)
 			} else {
-				fmt.Printf("[-] User deleted from DB: %s (ID: %s)\n", User.Username, UUID)
+				fmt.Printf("[-] User deleted from DB: %s\n", User.Username)
 			}
 
 		}
 
-		conn.Close()
 		fmt.Printf("[-] Connection closed: %s (ID: %s)\n", remoteAddr, UUID)
+		conn.Close()
 
 	}()
 
@@ -61,6 +74,7 @@ func (sv *Server) handleConnection(conn net.Conn) {
 	// DEBUG HERE
 	sv.mu.Lock()
 	sv.clients[UUID] = conn
+	sv.usersInRoom[UUID] = &User
 	sv.mu.Unlock()
 
 	err := sv.SQLiteRepository.CreateUser(User)
@@ -72,6 +86,7 @@ func (sv *Server) handleConnection(conn net.Conn) {
 	for scanner.Scan() {
 		//	fmt.Printf("[+] User %s connected\n", User.Username)
 		msg := strings.TrimSpace(scanner.Text())
+		roomMsg := fmt.Sprintf("[%s]: %s", User.Username, msg)
 		if msg == "" {
 			continue
 		}
@@ -80,8 +95,14 @@ func (sv *Server) handleConnection(conn net.Conn) {
 			handleInternalCommand(sv, conn, &User, msg)
 			continue
 		}
+
+		if User.CurrentRoomUUID == "" {
+			fmt.Fprintln(conn, "[!] You need to be in a room to send messages. Use /join\n")
+			continue
+		}
+
 		// In production, we should avoid logging the message content for privacy
 		fmt.Printf("[LOG][%s][%s]: %s\n", UUID, userIn, msg)
-		sv.broadcast(msg, conn)
+		sv.broadcast(roomMsg, conn, User.CurrentRoomUUID, sv.usersInRoom)
 	}
 }

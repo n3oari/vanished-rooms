@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"fmt"
 	"log"
 )
 
@@ -66,6 +65,7 @@ func (r *SQLiteRepository) DeleteRoom(roomUUID string) error {
 	return nil
 }
 
+/*
 func (r *SQLiteRepository) DeleteRoomIfEmpty(roomUUID string) (bool, error) {
 	var count int
 	queryCount := `SELECT COUNT(*) FROM participants WHERE uuid_room = ?`
@@ -84,6 +84,7 @@ func (r *SQLiteRepository) DeleteRoomIfEmpty(roomUUID string) (bool, error) {
 	}
 	return false, nil
 }
+*/
 
 func (r *SQLiteRepository) ListAllRooms() ([]Rooms, error) {
 	var rooms []Rooms
