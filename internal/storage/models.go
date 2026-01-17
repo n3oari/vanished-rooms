@@ -4,7 +4,6 @@ type Users struct {
 	UUID            string `db:"uuid"`
 	Username        string `db:"name"`
 	PasswordHash    string `db:"password_hash"`
-	PublicRSAKey    string `db:"public_rsa_key"`
 	CurrentRoomUUID string
 }
 
@@ -12,6 +11,7 @@ type Rooms struct {
 	UUID         string `db:"uuid"`
 	Name         string `db:"name"`
 	PasswordHash string `db:"password_hash"`
+	AESKey       string `db:"aes_key"`
 }
 
 type Participants struct {

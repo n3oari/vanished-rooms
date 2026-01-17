@@ -52,7 +52,6 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 	var (
 		userIn string
 		passIn string
-		keyIn  string
 	)
 
 	if scanner.Scan() {
@@ -61,15 +60,11 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 	if scanner.Scan() {
 		passIn = scanner.Text()
 	}
-	if scanner.Scan() {
-		keyIn = scanner.Text()
-	}
 
 	User = storage.Users{
 		UUID:         UUID,
 		Username:     userIn,
 		PasswordHash: passIn,
-		PublicRSAKey: keyIn,
 	}
 	// DEBUG HERE
 	sv.mu.Lock()

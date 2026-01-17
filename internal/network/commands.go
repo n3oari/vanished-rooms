@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"vanished-rooms/internal/crypto"
 	"vanished-rooms/internal/storage"
 )
 
@@ -21,17 +22,20 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		roomPass := extractFlag(msg, "-p")
 
 		if roomName == "" || roomPass == "" {
-			fmt.Fprintln(conn, "[!] Usage: /create -n <room_name> -p <room_password>\n")
+			fmt.Fprint(conn, "[!] Usage: /create -n <room_name> -p <room_password>\n")
 			return
 		}
+
+		roomKey, err := crypto.GenerateAESKey()
 
 		newRoom := storage.Rooms{
 			UUID:         generateUUID(),
 			Name:         roomName,
 			PasswordHash: roomPass,
+			AESKey:       roomKey,
 		}
 
-		err := sv.SQLiteRepository.CreateAndJoinRoom(newRoom, User.UUID)
+		err = sv.SQLiteRepository.CreateAndJoinRoom(newRoom, User.UUID)
 		if err != nil {
 			fmt.Fprintf(conn, "[!] Database Error: %v\n", err)
 			return
@@ -47,20 +51,26 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 	case "/join":
 		roomName := extractFlag(msg, "-n")
 		roomPass := extractFlag(msg, "-p")
+
 		if roomName == "" || roomPass == "" {
 			fmt.Fprint(conn, "[!] Usage: /join -n <room_name> -p <room_password>\n")
 			return
 		}
-		roomID, err := sv.SQLiteRepository.JoinRoom(User.UUID, roomName, roomPass)
+		roomUUID, err := sv.SQLiteRepository.JoinRoom(User.UUID, roomName, roomPass)
 		if err != nil {
 			fmt.Fprintf(conn, "[!] Failed to join room: %v\n", err)
 			return
 		}
 
-		User.CurrentRoomUUID = roomID
+		AESkey, err := sv.SQLiteRepository.GetRoomAESKey(roomUUID)
+		if err == nil {
+			fmt.Fprintf(conn, "SET_ROOM_KEY: %s\n", AESkey)
+		}
+
+		User.CurrentRoomUUID = roomUUID
 
 		sv.mu.Lock()
-		sv.usersInRoom[User.UUID].CurrentRoomUUID = roomID
+		sv.usersInRoom[User.UUID].CurrentRoomUUID = roomUUID
 		sv.mu.Unlock()
 
 		fmt.Fprintf(conn, "[+] Success! You have joined the room: %s\n", roomName)

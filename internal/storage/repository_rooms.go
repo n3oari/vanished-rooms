@@ -12,8 +12,8 @@ func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error 
 		return err
 	}
 
-	_, err = tx.Exec(`INSERT INTO rooms (uuid, name, password_hash) VALUES (?,?,?)`,
-		room.UUID, room.Name, room.PasswordHash)
+	_, err = tx.Exec(`INSERT INTO rooms (uuid, name, password_hash, aes_key) VALUES (?,?,?,?)`,
+		room.UUID, room.Name, room.PasswordHash, room.AESKey)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -121,4 +121,16 @@ func (r *SQLiteRepository) ListAllRooms() ([]Rooms, error) {
 	}
 
 	return rooms, nil
+}
+
+func (r *SQLiteRepository) GetRoomAESKey(roomUUID string) (string, error) {
+	query := `SELECT aes_key FROM rooms WHERE uuid = ?`
+	var AESkey string
+	err := r.db.QueryRow(query, roomUUID).Scan(AESkey)
+
+	if err != nil {
+		return "", err
+	}
+
+	return AESkey, nil
 }

@@ -1,8 +1,8 @@
 package storage
 
 func (r *SQLiteRepository) CreateUser(u Users) error {
-	query := `INSERT INTO users (uuid, name, password_hash, public_rsa_key) VALUES (?,?,?,?)`
-	_, err := r.db.Exec(query, u.UUID, u.Username, u.PasswordHash, u.PublicRSAKey)
+	query := `INSERT INTO users (uuid, name, password_hash) VALUES (?,?,?)`
+	_, err := r.db.Exec(query, u.UUID, u.Username, u.PasswordHash)
 	return err
 }
 
