@@ -25,8 +25,6 @@ func init() {
 
 	clientCmd.Flags().StringVarP(&username, "username", "u", "", "Username for the client")
 	clientCmd.Flags().StringVarP(&password, "password", "p", "", "Password for the client")
-	clientCmd.Flags().StringVarP(&publicKey, "publicKey", "k", "", "public key from user")
 	clientCmd.MarkFlagRequired("username")
 	clientCmd.MarkFlagRequired("password")
-	clientCmd.MarkFlagRequired("publicKey")
 }

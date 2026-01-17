@@ -22,7 +22,7 @@ var serverCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		db, err := sql.Open("sqlite", `./internal/storage/sqlite.db`)
 		if err != nil {
-			log.Fatalf("[-] Error al abrir SQLite: %v", err)
+			log.Fatalf("[-] Error to open SQLite: %v", err)
 		}
 		defer db.Close()
 
