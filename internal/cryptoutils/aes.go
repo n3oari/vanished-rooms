@@ -67,11 +67,12 @@ func DecryptForChat(cipherTextB64 string, key []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	// AES-GCM always use a Noncne of 12 bytes
 	ivSize := 12
 	if len(data) < ivSize {
 		return "", fmt.Errorf("el mensaje es demasiado corto")
 	}
+
 	iv := data[:ivSize]
 	payload := data[ivSize:]
 
