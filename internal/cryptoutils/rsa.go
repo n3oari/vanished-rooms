@@ -64,8 +64,13 @@ func EncodePublicKeyToBase64(priv *rsa.PrivateKey) (string, error) {
 	return base64.StdEncoding.EncodeToString([]byte(pemString)), nil
 }
 
-func EncryptWithPublicKey(data []byte, pubKeyPem string) ([]byte, error) {
-	block, _ := pem.Decode([]byte(pubKeyPem))
+func EncryptWithPublicKey(data []byte, pubKeyBase64 string) ([]byte, error) {
+	pemBytes, err := base64.StdEncoding.DecodeString(pubKeyBase64)
+	if err != nil {
+		return nil, fmt.Errorf("error decodificando base64: %v", err)
+	}
+
+	block, _ := pem.Decode(pemBytes)
 	if block == nil {
 		return nil, fmt.Errorf("error al decodificar llave pública")
 	}
@@ -81,4 +86,23 @@ func EncryptWithPublicKey(data []byte, pubKeyPem string) ([]byte, error) {
 	}
 
 	return rsa.EncryptOAEP(sha256.New(), rand.Reader, pubKey, data, nil)
+}
+
+func DecryoptWithPrivateKey(ciphertextB64 string, privKey *rsa.PrivateKey) ([]byte, error) {
+	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextB64)
+	if err != nil {
+		return nil, fmt.Errorf("error decodificando base64: %v", err)
+	}
+
+	plaintext, err := rsa.DecryptOAEP(
+		sha256.New(),
+		rand.Reader,
+		privKey,
+		ciphertext,
+		nil,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error descifrando con RSA: %v", err)
+	}
+	return plaintext, nil
 }

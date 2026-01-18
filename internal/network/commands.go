@@ -1,6 +1,7 @@
 package network
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
@@ -51,6 +52,7 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 			fmt.Fprint(conn, "[!] Usage: /join -n <room_name> -p <room_password>\n")
 			return
 		}
+
 		roomID, err := sv.SQLiteRepository.JoinRoom(User.UUID, roomName, roomPass)
 		if err != nil {
 			fmt.Fprintf(conn, "[!] Failed to join room: %v\n", err)
@@ -59,13 +61,18 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 
 		User.CurrentRoomUUID = roomID
 		sv.mu.Lock()
-		sv.usersInRoom[User.UUID].CurrentRoomUUID = roomID
+		if u, ok := sv.usersInRoom[User.UUID]; ok {
+			u.CurrentRoomUUID = roomID
+		}
 		sv.mu.Unlock()
 
-		keyNotify := fmt.Sprintf("USER_JOINED:%s:%s", User.Username, User.PublicRSAKey)
+		w := bufio.NewWriter(conn)
+
+		keyNotify := fmt.Sprintf("USER_JOINED:%s:%s\n", User.Username, User.PublicRSAKey)
 		sv.broadcast(keyNotify, conn, roomID, sv.usersInRoom)
 
-		fmt.Fprintf(conn, "[+] Success! You have joined the room: %s\n", roomName)
+		fmt.Fprintf(w, "[+] Success! You have joined the room: %s\n", roomName)
+		w.Flush()
 
 	case "/users":
 		if User.CurrentRoomUUID == "" {
@@ -102,7 +109,6 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 			sb.WriteString(room.Name)
 			sb.WriteString("\n")
 		}
-		//	sb.WriteString("EOF\n")
 
 		_, err = conn.Write([]byte(sb.String()))
 		if err != nil {
@@ -130,24 +136,24 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 
 		targetName := parts[1]
 		encryptedKeyB64 := parts[2]
+		fmt.Printf("\n[DEBUG SERVIDOR] Recibido /sendKey para: %s\n", targetName)
+		fmt.Printf("[DEBUG SERVIDOR] Payload RSA (B64): %s\n", encryptedKeyB64)
 
 		sv.mu.Lock()
 		var targetConn net.Conn
-		var targetUUID string
+
 		for _, u := range sv.usersInRoom {
 			if u.Username == targetName {
-				targetConn = sv.clients[targetUUID]
+				targetConn = sv.clients[u.UUID]
 				break
 			}
 		}
 
-		if targetUUID != "" {
-			targetConn = sv.clients[targetUUID]
-		}
 		sv.mu.Unlock()
 
 		if targetConn != nil {
 			fmt.Fprintf(targetConn, "KEY_DELIVERY:%s:%s\n", User.Username, encryptedKeyB64)
+			fmt.Printf("[DEBUG SERVIDOR] KEY_DELIVERY enviado a %s\n", targetName)
 		}
 
 	case "/help":

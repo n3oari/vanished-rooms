@@ -2,6 +2,7 @@ package network
 
 import (
 	"bufio"
+	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -19,18 +20,33 @@ var (
 	MyPrivateKey interface{}
 )
 
-func StartClient(addr, user, pass, publicKey string) {
+func StartClient(addr, user, pass, privateKeyPath string) {
 	ui.PrintRandomBanner()
 
+	privRSA, ok := MyPrivateKey.(*rsa.PrivateKey)
+	if !ok {
+		log.Fatal("[!] MyPrivateKey no es una llave RSA válida")
+	}
+	pubKeyBytes, err := cryptoutils.EncodePublicKeyToBase64(privRSA) // Asegúrate de tener esta función
+	if err != nil {
+		log.Fatal("Error exportando llave pública")
+	}
+
+	fmt.Println("[+] Llave privada cargada en la interfaz correctamente.")
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		log.Fatalf("No se pudo conectar al servidor: %v", err)
 	}
 	defer conn.Close()
 
-	fmt.Fprintln(conn, user)
-	fmt.Fprintln(conn, pass)
-	fmt.Fprintln(conn, publicKey)
+	writer := bufio.NewWriter(conn)
+
+	// ==========================================
+	fmt.Fprintln(writer, user)        // 1. Envía el Username
+	fmt.Fprintln(writer, pass)        // 2. Envía el Password
+	fmt.Fprintln(writer, pubKeyBytes) // 3. Envía la Key
+
+	writer.Flush()
 
 	fmt.Printf("[+] Connected to server as %s. Say something :)\n", user)
 
@@ -38,14 +54,25 @@ func StartClient(addr, user, pass, publicKey string) {
 		scanner := bufio.NewScanner(conn)
 		for scanner.Scan() {
 			line := scanner.Text()
+			fmt.Printf("\n[SERVIDOR DICE]: %s\n> ", line)
+			if strings.Contains(line, "created successfully") {
+				newKey, err := cryptoutils.GenerateAESKey()
+				if err != nil {
+					fmt.Printf("\n[!] Error local al generar clave: %v\n", err)
+				} else {
+					CurrentRoom.AESKey = newKey
+					fmt.Println("\n[!] Sala lista. Clave AES generada y guardada en memoria local.")
+				}
+			}
 
 			if strings.HasPrefix(line, "KEY_DELIVERY:") {
+				fmt.Printf("\n[DEBUG CLIENTE] Entrada cruda: %q\n", line)
 				handleKeyDelivery(line)
 				continue
 			}
 
 			if strings.HasPrefix(line, "USER_JOINED:") {
-				HandleUserJoined(line, conn)
+				HandleUserJoined(line, writer)
 				continue
 			}
 
@@ -75,17 +102,21 @@ func StartClient(addr, user, pass, publicKey string) {
 		}
 
 		if strings.HasPrefix(text, "/") {
-			fmt.Fprintln(conn, text)
+			fmt.Fprintln(writer, text)
 		} else if len(CurrentRoom.AESKey) > 0 {
-			basura, err := cryptoutils.EncryptForChat(text, CurrentRoom.AESKey)
+			junk, err := cryptoutils.EncryptForChat(text, CurrentRoom.AESKey)
 			if err == nil {
-				fmt.Fprintln(conn, basura)
+				fmt.Printf("\n[DEBUG CLIENTE] Texto original: %s", text)
+				fmt.Printf("\n[DEBUG CLIENTE] Enviando 'junk data' (AES): %s", junk)
+				fmt.Printf("\n[DEBUG CLIENTE] Longitud del payload: %d bytes\n", len(junk))
+				fmt.Fprintln(writer, junk)
 			} else {
-				fmt.Fprintln(conn, text)
+				fmt.Fprintln(writer, text)
 			}
 		} else {
-			fmt.Fprintln(conn, text)
+			fmt.Fprintln(writer, text)
 		}
+		writer.Flush()
 		fmt.Print("> ")
 	}
 }
@@ -95,11 +126,46 @@ func handleKeyDelivery(line string) {
 	if len(parts) < 3 {
 		return
 	}
-	key, _ := base64.StdEncoding.DecodeString(parts[2])
-	CurrentRoom.AESKey = key
-	fmt.Println("\n[!] Llave recibida.")
-}
+	encryptedKeyB64 := parts[2]
 
-func HandleUserJoined(line string, conn net.Conn) {
-	fmt.Println("\n[!] Alguien entró a la sala.")
+	priv, ok := MyPrivateKey.(*rsa.PrivateKey)
+	if !ok {
+		fmt.Println("\n[!] Error: No se encontró la clave privada local para descifrar.")
+		return
+	}
+
+	key, err := cryptoutils.DecryoptWithPrivateKey(encryptedKeyB64, priv)
+	if err != nil {
+		fmt.Printf("[!] Error al descifrar la llave de la sala: %v\n", err)
+		return
+	}
+
+	CurrentRoom.AESKey = key
+	fmt.Println("\n[!] Llave de sala recibida y activada. Ahora puedes leer los mensajes.")
+
+}
+func HandleUserJoined(line string, writer *bufio.Writer) {
+	parts := strings.SplitN(line, ":", 3)
+	if len(parts) < 3 {
+		return
+	}
+	targetUser := parts[1]
+	pubKeyb64 := parts[2]
+
+	if len(CurrentRoom.AESKey) > 0 {
+		// Ciframos nuestra AES con la RSA Pública del que acaba de entrar
+		encryptedKey, err := cryptoutils.EncryptWithPublicKey(CurrentRoom.AESKey, pubKeyb64)
+		if err != nil {
+			fmt.Printf("\n[!] Error cifrando llave para %s: %v\n", targetUser, err)
+			return
+		}
+
+		encKeyB64 := base64.StdEncoding.EncodeToString(encryptedKey)
+
+		fmt.Fprintf(writer, "/sendKey %s %s\n", targetUser, encKeyB64)
+
+		writer.Flush()
+
+		fmt.Printf("\n[+] Llave de sala enviada a %s correctamente.\n> ", targetUser)
+	}
 }

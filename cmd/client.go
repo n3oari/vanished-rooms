@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/rsa"
 	"log"
 	"vanished-rooms/internal/cryptoutils"
 	"vanished-rooms/internal/network"
@@ -18,8 +19,9 @@ var clientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "Run as client and register",
 	Run: func(cmd *cobra.Command, args []string) {
-		pubKeyToSend := preparePublicKey(privateKeyPath)
-		network.StartClient("localhost:8080", username, password, pubKeyToSend)
+		priv, _ := prepareKeys(privateKeyPath)
+		network.MyPrivateKey = priv
+		network.StartClient("localhost:8080", username, password, privateKeyPath)
 	},
 }
 
@@ -34,7 +36,7 @@ func init() {
 	clientCmd.MarkFlagRequired("key")
 }
 
-func preparePublicKey(path string) string {
+func prepareKeys(path string) (*rsa.PrivateKey, string) {
 	privKey, err := cryptoutils.LoadPrivateKey(path)
 	if err != nil {
 		log.Fatalf("Error loading private key: %v", err)
@@ -45,5 +47,5 @@ func preparePublicKey(path string) string {
 		log.Fatalf("Error generating a public key: %v", err)
 	}
 
-	return pubKeyToSend
+	return privKey, pubKeyToSend
 }
