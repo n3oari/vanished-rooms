@@ -4,8 +4,8 @@ go 1.25.5
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/mattn/go-sqlite3 v1.14.33
 	github.com/spf13/cobra v1.10.2
+	modernc.org/sqlite v1.44.1
 )
 
 require (
@@ -20,5 +20,4 @@ require (
 	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.44.1 // indirect
 )
