@@ -58,10 +58,12 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		}
 
 		User.CurrentRoomUUID = roomID
-
 		sv.mu.Lock()
 		sv.usersInRoom[User.UUID].CurrentRoomUUID = roomID
 		sv.mu.Unlock()
+
+		keyNotify := fmt.Sprintf("USER_JOINED:%s:%s", User.Username, User.PublicRSAKey)
+		sv.broadcast(keyNotify, conn, roomID, sv.usersInRoom)
 
 		fmt.Fprintf(conn, "[+] Success! You have joined the room: %s\n", roomName)
 
@@ -118,6 +120,36 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		User.CurrentRoomUUID = ""
 		conn.Write([]byte("[+] You leaved the room successfully\n"))
 
+	case "/sendKey":
+		//this is a server internal command, not for users
+		//TO-DO: deny to users
+		parts := strings.SplitN(msg, " ", 3)
+		if len(parts) < 3 {
+			return
+		}
+
+		targetName := parts[1]
+		encryptedKeyB64 := parts[2]
+
+		sv.mu.Lock()
+		var targetConn net.Conn
+		var targetUUID string
+		for _, u := range sv.usersInRoom {
+			if u.Username == targetName {
+				targetConn = sv.clients[targetUUID]
+				break
+			}
+		}
+
+		if targetUUID != "" {
+			targetConn = sv.clients[targetUUID]
+		}
+		sv.mu.Unlock()
+
+		if targetConn != nil {
+			fmt.Fprintf(targetConn, "KEY_DELIVERY:%s:%s\n", User.Username, encryptedKeyB64)
+		}
+
 	case "/help":
 		fmt.Fprintln(conn, "[?] Available commands:")
 		fmt.Fprintln(conn, "    /create -n <name> -p <pass>  -> Create a new room and join")
@@ -126,7 +158,8 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		fmt.Fprintln(conn, "    /leave-room                  -> Leave the room ")
 		fmt.Fprintln(conn, "    /users                       -> List all users (you need to be in a room")
 		fmt.Fprintln(conn, "    /help                        -> Show help menu")
-		fmt.Fprintln(conn, "    /quit                        -> Disconnect and Remove user permanetly (you can also use control + C ")
+		fmt.Fprintln(conn, "    /quit                        -> Disconnect and Remove user permanetly (you can also use control + C")
+		fmt.Fprintln(conn, "\nopenssl genrsa -out privada.pem 2048 -> Generate private key")
 
 	case "/quit":
 		fmt.Fprintln(conn, "[!] ¡¡ BYEE !!")

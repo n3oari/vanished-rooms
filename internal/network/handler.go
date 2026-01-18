@@ -9,106 +9,78 @@ import (
 )
 
 func (sv *Server) HandleConnection(conn net.Conn) {
-	remoteAddr := conn.RemoteAddr().String()
 	UUID := generateUUID()
 	var User storage.Users
 
-	// when the connection ends, clean up all
+	// Limpieza al desconectar
 	defer func() {
 		sv.mu.Lock()
 		roomToDelete := User.CurrentRoomUUID
-
 		delete(sv.clients, UUID)
 		delete(sv.usersInRoom, UUID)
 		sv.mu.Unlock()
 
-		// remove room
 		if roomToDelete != "" {
-			err := sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(UUID, roomToDelete)
-			if err != nil {
-				fmt.Printf("[!] Error cleaning room on disconnect: %v\n", err)
-			}
+			sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(UUID, roomToDelete)
 		}
-
-		// remove user
 		if User.UUID != "" {
-			err := sv.SQLiteRepository.DeleteUser(User)
-
-			if err != nil {
-				fmt.Printf("[!] Error deleting from DB: %v\n", err)
-			} else {
-				fmt.Printf("[-] User deleted from DB: %s\n", User.Username)
-			}
-
+			sv.SQLiteRepository.DeleteUser(User)
 		}
-
-		fmt.Printf("[-] Connection closed: %s (ID: %s)\n", remoteAddr, UUID)
 		conn.Close()
-
 	}()
 
 	scanner := bufio.NewScanner(conn)
 
-	var (
-		userIn string
-		passIn string
-		keyIn  string
-	)
+	// 1. LOGIN: Recibimos los 3 datos iniciales del cliente
+	if scanner.Scan() {
+		User.Username = scanner.Text()
+	}
+	if scanner.Scan() {
+		User.PasswordHash = scanner.Text()
+	}
+	if scanner.Scan() {
+		User.PublicRSAKey = scanner.Text()
+	}
+	User.UUID = UUID
 
-	if scanner.Scan() {
-		userIn = scanner.Text()
-	}
-	if scanner.Scan() {
-		passIn = scanner.Text()
-	}
-	if scanner.Scan() {
-		keyIn = scanner.Text()
-	}
-
-	User = storage.Users{
-		UUID:         UUID,
-		Username:     userIn,
-		PasswordHash: passIn,
-		PublicRSAKey: keyIn,
-	}
-	// DEBUG HERE
+	// Guardar usuario en memoria y DB
 	sv.mu.Lock()
 	sv.clients[UUID] = conn
 	sv.usersInRoom[UUID] = &User
 	sv.mu.Unlock()
+	sv.SQLiteRepository.CreateUser(User)
 
-	err := sv.SQLiteRepository.CreateUser(User)
-	if err != nil {
-		fmt.Printf("[!] Error saving to DB: %v\n", err)
-		return
-	}
+	fmt.Printf("[+] Nuevo usuario: %s\n", User.Username)
 
+	// 2. BUCLE PRINCIPAL: Escuchar mensajes
 	for scanner.Scan() {
 		msg := strings.TrimSpace(scanner.Text())
 		if msg == "" {
 			continue
 		}
 
-		// 1. OBTENER SIEMPRE LA VERSIÓN REAL DEL USUARIO
+		// Obtener datos actualizados del usuario (por si cambió de sala)
 		sv.mu.Lock()
 		u := sv.usersInRoom[UUID]
 		sv.mu.Unlock()
 
-		// 2. PROCESAR COMANDOS
+		// A. Si es un comando (/join, /sendKey, etc)
 		if strings.HasPrefix(msg, "/") {
 			sv.HandleInternalCommand(conn, u, msg)
 			continue
 		}
 
-		// 3. VALIDAR SALA USANDO LA VERSIÓN REAL (u)
+		// B. Si es un mensaje de chat
 		if u.CurrentRoomUUID == "" {
-			fmt.Fprintln(conn, "[!] You need to be in a room to send messages. Use /join")
+			fmt.Fprintln(conn, "[!] Debes entrar a una sala con /join")
 			continue
 		}
 
-		// 4. BROADCAST USANDO EL ID ACTUALIZADO
+		// LOG DE SEGURIDAD: Aquí es donde verás la "Junk Data"
+		// Si el cliente cifra bien, 'msg' será un Base64 loco
+		fmt.Printf("[LOG][Sala: %s][%s]: %s\n", u.CurrentRoomUUID, u.Username, msg)
+
 		roomMsg := fmt.Sprintf("[%s]: %s", u.Username, msg)
-		fmt.Printf("[LOG][%s][%s]: %s\n", UUID, u.Username, msg)
 		sv.broadcast(roomMsg, conn, u.CurrentRoomUUID, sv.usersInRoom)
 	}
 }

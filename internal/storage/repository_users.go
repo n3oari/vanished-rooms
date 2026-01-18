@@ -12,6 +12,17 @@ func (r *SQLiteRepository) DeleteUser(u Users) error {
 	return err
 }
 
+func (r *SQLiteRepository) GetPubKeyByUsername(userTarget string) (string, error) {
+	pubKey := ""
+	query := `SELECT public_rsa_key FROM users where name = ?`
+	err := r.db.QueryRow(query, userTarget).Scan(&pubKey)
+	if err != nil {
+		return "", err
+	}
+
+	return pubKey, nil
+}
+
 func (r *SQLiteRepository) ListAllUsersInRoom(roomUUID string) ([]Users, error) {
 	var users []Users
 
