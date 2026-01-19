@@ -22,7 +22,7 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		roomPass := extractFlag(msg, "-p")
 
 		if roomName == "" || roomPass == "" {
-			fmt.Fprintln(conn, "[!] Usage: /create -n <room_name> -p <room_password>\n")
+			fmt.Fprintln(conn, "[!] Usage: /create -n <room_name> -p <room_password>")
 			return
 		}
 
@@ -85,11 +85,11 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		}
 
 		var sb strings.Builder
+		sb.WriteString("\n=== USER LIST ===\n")
 		for _, user := range users {
-			sb.WriteString("- ")
-			sb.WriteString(user.Username)
-			sb.WriteString("\n")
+			fmt.Fprintf(&sb, " • %s\n", user.Username)
 		}
+		sb.WriteString("======================\n")
 
 		_, err = conn.Write([]byte(sb.String()))
 		if err != nil {
