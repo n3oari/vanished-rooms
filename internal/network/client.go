@@ -41,10 +41,9 @@ func StartClient(addr, user, pass, privateKeyPath string) {
 
 	writer := bufio.NewWriter(conn)
 
-	// ==========================================
-	fmt.Fprintln(writer, user)        // 1. Envía el Username
-	fmt.Fprintln(writer, pass)        // 2. Envía el Password
-	fmt.Fprintln(writer, pubKeyBytes) // 3. Envía la Key
+	fmt.Fprintln(writer, user)
+	fmt.Fprintln(writer, pass)
+	fmt.Fprintln(writer, pubKeyBytes)
 
 	writer.Flush()
 
@@ -54,6 +53,7 @@ func StartClient(addr, user, pass, privateKeyPath string) {
 		scanner := bufio.NewScanner(conn)
 		for scanner.Scan() {
 			line := scanner.Text()
+			reader := bufio.NewReader(conn)
 			fmt.Printf("\n[SERVIDOR DICE]: %s\n> ", line)
 			if strings.Contains(line, "created successfully") {
 				newKey, err := cryptoutils.GenerateAESKey()
@@ -89,7 +89,18 @@ func StartClient(addr, user, pass, privateKeyPath string) {
 				}
 			}
 
-			fmt.Printf("\r%s\n> ", line)
+			if line == `/quit\n` || line == `\quit\r\n` {
+				fmt.Println("\n[-] ..........Disconnecting ")
+				return
+			}
+
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("\n[!] El servidor ha cerrado la conexión.")
+				os.Exit(0) //
+			}
+
+			fmt.Printf("\r%s ", line)
 		}
 	}()
 

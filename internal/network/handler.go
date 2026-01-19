@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"vanished-rooms/internal/cryptoutils"
 	"vanished-rooms/internal/storage"
 )
 
@@ -35,6 +36,16 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 	}
 	if scanner.Scan() {
 		User.PasswordHash = scanner.Text()
+		hash, err := cryptoutils.HashPassword(User.PasswordHash)
+		if err != nil {
+			fmt.Fprintf(conn, "[!] Error hashing : %v\n", err)
+			return
+		}
+		if cryptoutils.VerifyPassword(User.PasswordHash, hash) {
+			fmt.Println("[+] Hash verified successfully")
+			User.PasswordHash = hash
+		}
+
 	}
 	if scanner.Scan() {
 		User.PublicRSAKey = scanner.Text()
@@ -69,7 +80,7 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 			continue
 		}
 
-		fmt.Printf("[LOG][Sala: %s][%s]: %s\n", u.CurrentRoomUUID, u.Username, msg)
+		fmt.Printf("[Room -> %s][%s]: %s\n", u.Username, u.Username, msg)
 		// encrytped msg
 		roomMsg := fmt.Sprintf("[%s]: %s", u.Username, msg)
 		sv.broadcast(roomMsg, conn, u.CurrentRoomUUID, sv.usersInRoom)

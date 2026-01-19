@@ -99,22 +99,31 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 	case "/rooms":
 		rooms, err := sv.SQLiteRepository.ListAllRooms()
 		if err != nil {
-			conn.Write([]byte("Error retrieving rooms\n"))
+			log.Printf("Error al listar salas: %v", err)
+			_, _ = conn.Write([]byte("[!] Error al recuperar las salas\n"))
+			return
+		}
+
+		if len(rooms) == 0 {
+			_, _ = conn.Write([]byte("[i] No hay salas disponibles.\n"))
 			return
 		}
 
 		var sb strings.Builder
+		// Construimos TODO el mensaje en memoria primero
+		sb.WriteString("\n=== LISTA DE SALAS ===\n")
 		for _, room := range rooms {
-			sb.WriteString("- ")
-			sb.WriteString(room.Name)
-			sb.WriteString("\n")
+			// fmt.Fprintf es la forma correcta de usar strings.Builder con formato
+			fmt.Fprintf(&sb, " • %s\n", room.Name)
 		}
+		sb.WriteString("======================\n")
 
+		// ENVIAR TODO DE GOLPE:
+		// Solo hacemos UN conn.Write con el string completo al final.
 		_, err = conn.Write([]byte(sb.String()))
 		if err != nil {
-			log.Print("Error sending data to client")
+			log.Printf("Error enviando lista: %v", err)
 		}
-
 	case "/leave-room":
 		err := sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(User.UUID, User.CurrentRoomUUID)
 		if err != nil {
@@ -165,9 +174,15 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		fmt.Fprintln(conn, "    /users                       -> List all users (you need to be in a room")
 		fmt.Fprintln(conn, "    /help                        -> Show help menu")
 		fmt.Fprintln(conn, "    /quit                        -> Disconnect and Remove user permanetly (you can also use control + C")
-		fmt.Fprintln(conn, "\nopenssl genrsa -out privada.pem 2048 -> Generate private key")
+		fmt.Fprintln(conn, "\n\nopenssl genrsa -out privada.pem 2048 -> Generate private key")
 
 	case "/quit":
+		err := sv.SQLiteRepository.DeleteUser(*User)
+
+		if err != nil {
+			return
+		}
+
 		fmt.Fprintln(conn, "[!] ¡¡ BYEE !!")
 		conn.Close()
 		return
