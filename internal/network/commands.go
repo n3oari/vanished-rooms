@@ -16,14 +16,16 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 	}
 
 	switch parts[0] {
-
 	case "/create":
 		roomName := extractFlag(msg, "-n")
 		roomPass := extractFlag(msg, "-p")
 
+		roomName = strings.TrimSpace(roomName)
+		roomPass = strings.TrimSpace(roomPass)
+
 		if roomName == "" || roomPass == "" {
 			fmt.Fprintln(conn, "[!] Usage: /create -n <room_name> -p <room_password>")
-			return
+			break
 		}
 
 		newRoom := storage.Rooms{
@@ -35,15 +37,20 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		err := sv.SQLiteRepository.CreateAndJoinRoom(newRoom, User.UUID)
 		if err != nil {
 			fmt.Fprintf(conn, "[!] Database Error: %v\n", err)
-			return
-		} else {
-			User.CurrentRoomUUID = newRoom.UUID
-			fmt.Fprintf(conn, "[+] Room '%s' created successfully.\n", roomName)
+			break
 		}
 
+		User.CurrentRoomUUID = newRoom.UUID
+		User.IsOwner = true
+
 		sv.mu.Lock()
-		sv.usersInRoom[User.UUID].CurrentRoomUUID = newRoom.UUID
+		if u, exists := sv.UsersInRoom[User.UUID]; exists {
+			u.CurrentRoomUUID = newRoom.UUID
+			u.IsOwner = true
+		}
 		sv.mu.Unlock()
+
+		fmt.Fprintf(conn, "[+] Room '%s' created successfully. You are the host.\n", roomName)
 
 	case "/join":
 		roomName := extractFlag(msg, "-n")
@@ -61,15 +68,15 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 
 		User.CurrentRoomUUID = roomID
 		sv.mu.Lock()
-		if u, ok := sv.usersInRoom[User.UUID]; ok {
-			u.CurrentRoomUUID = roomID
-		}
+		sv.UsersInRoom[User.UUID] = User
 		sv.mu.Unlock()
+
+		fmt.Printf("\n[DEBUG SERVIDOR] Usuario %s se une a %s\n", User.Username, roomName)
 
 		w := bufio.NewWriter(conn)
 
 		keyNotify := fmt.Sprintf("USER_JOINED:%s:%s\n", User.Username, User.PublicRSAKey)
-		sv.broadcast(keyNotify, conn, roomID, sv.usersInRoom)
+		sv.broadcast(keyNotify, conn, roomID, sv.UsersInRoom)
 
 		fmt.Fprintf(w, "[+] Success! You have joined the room: %s\n", roomName)
 		w.Flush()
@@ -110,21 +117,35 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		}
 
 		var sb strings.Builder
-		// Construimos TODO el mensaje en memoria primero
 		sb.WriteString("\n=== LISTA DE SALAS ===\n")
 		for _, room := range rooms {
-			// fmt.Fprintf es la forma correcta de usar strings.Builder con formato
 			fmt.Fprintf(&sb, " • %s\n", room.Name)
 		}
 		sb.WriteString("======================\n")
 
-		// ENVIAR TODO DE GOLPE:
-		// Solo hacemos UN conn.Write con el string completo al final.
 		_, err = conn.Write([]byte(sb.String()))
 		if err != nil {
 			log.Printf("Error enviando lista: %v", err)
 		}
 	case "/leave-room":
+
+		sv.mu.Lock()
+		u, exists := sv.UsersInRoom[User.UUID]
+		if !exists {
+			sv.mu.Unlock()
+			break
+		}
+		roomID := u.CurrentRoomUUID
+		wasOwner := u.IsOwner
+		sv.mu.Unlock()
+
+		if wasOwner {
+			newHostUUID, err := sv.SQLiteRepository.PromoteNextHost(roomID, User.UUID)
+			if err == nil && newHostUUID != "" {
+				NotifyPromotion(sv, newHostUUID)
+			}
+		}
+
 		err := sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(User.UUID, User.CurrentRoomUUID)
 		if err != nil {
 			fmt.Printf("[!] Error leaving the room ", err)
@@ -145,15 +166,13 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 
 		targetName := parts[1]
 		encryptedKeyB64 := parts[2]
-		fmt.Printf("\n[DEBUG SERVIDOR] Recibido /sendKey para: %s\n", targetName)
-		fmt.Printf("[DEBUG SERVIDOR] Payload RSA (B64): %s\n", encryptedKeyB64)
 
 		sv.mu.Lock()
 		var targetConn net.Conn
 
-		for _, u := range sv.usersInRoom {
+		for _, u := range sv.UsersInRoom {
 			if u.Username == targetName {
-				targetConn = sv.clients[u.UUID]
+				targetConn = sv.Clients[u.UUID]
 				break
 			}
 		}
@@ -177,15 +196,6 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		fmt.Fprintln(conn, "\n\nopenssl genrsa -out privada.pem 2048 -> Generate private key")
 
 	case "/quit":
-		err := sv.SQLiteRepository.DeleteUser(*User)
-
-		if err != nil {
-			return
-		}
-
-		fmt.Fprintln(conn, "[!] ¡¡ BYEE !!")
-		conn.Close()
-		return
 
 	default:
 		fmt.Fprintf(conn, "[!] Unknown command: %s. Type /help for info.\n", parts[0])

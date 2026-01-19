@@ -11,8 +11,8 @@ import (
 )
 
 type Server struct {
-	clients          map[string]net.Conn
-	usersInRoom      map[string]*storage.Users
+	Clients          map[string]net.Conn
+	UsersInRoom      map[string]*storage.Users
 	mu               sync.Mutex
 	SQLiteRepository *storage.SQLiteRepository
 }
@@ -20,8 +20,8 @@ type Server struct {
 func StartServer(port string, repository *storage.SQLiteRepository) {
 	ui.PrintRandomBanner()
 	sv := &Server{
-		clients:          make(map[string]net.Conn),
-		usersInRoom:      make(map[string]*storage.Users),
+		Clients:          make(map[string]net.Conn),
+		UsersInRoom:      make(map[string]*storage.Users),
 		SQLiteRepository: repository,
 	}
 

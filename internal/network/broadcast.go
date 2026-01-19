@@ -15,8 +15,7 @@ func (sv *Server) broadcast(msg string, sender net.Conn, roomUUID string, allUse
 	sv.mu.Lock()
 	defer sv.mu.Unlock()
 
-	for id, clientConn := range sv.clients {
-		// 1. Saltamos al emisor
+	for id, clientConn := range sv.Clients {
 		if clientConn == sender {
 			continue
 		}

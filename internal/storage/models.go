@@ -1,12 +1,15 @@
 package storage
 
+import "time"
+
 type Users struct {
-	UUID            string `db:"uuid"`
-	Username        string `db:"name"`
-	PasswordHash    string `db:"password_hash"`
-	PublicRSAKey    string `db:"public_rsa_key"`
-	IsOwner         bool   `db:"owner"`
-	CurrentRoomUUID string
+	UUID            string    `db:"uuid"`
+	Username        string    `db:"name"`
+	PasswordHash    string    `db:"password_hash"`
+	PublicRSAKey    string    `db:"public_rsa_key"`
+	IsOwner         bool      `db:"is_owner"`
+	CurrentRoomUUID string    `db:"uuid_current_room"`
+	JoinedAt        time.Time `db:"joined_at"`
 }
 
 type Rooms struct {

@@ -18,6 +18,7 @@ var (
 		AESKey []byte
 	}
 	MyPrivateKey interface{}
+	IsHost       bool
 )
 
 func StartClient(addr, user, pass, privateKeyPath string) {
@@ -63,6 +64,7 @@ func StartClient(addr, user, pass, privateKeyPath string) {
 					fmt.Printf("\n[!] Error local al generar clave: %v\n", err)
 				} else {
 					CurrentRoom.AESKey = newKey
+					IsHost = true
 					fmt.Println("\n[!] Sala lista. Clave AES generada y guardada en memoria local.")
 				}
 			}
@@ -76,6 +78,13 @@ func StartClient(addr, user, pass, privateKeyPath string) {
 			if strings.HasPrefix(line, "USER_JOINED:") {
 				HandleUserJoined(line, writer)
 				continue
+			}
+
+			if strings.TrimSpace(line) == CmdPromotedHost {
+				IsHost = true
+				fmt.Println("\n[!] EL HOST ANTERIOR SE HA IDO. AHORA ERES EL DUEÑO DE LA SALA.")
+				fmt.Print("> ")
+
 			}
 
 			if strings.Contains(line, ": ") && !strings.HasPrefix(line, "[Server]") {
@@ -135,11 +144,13 @@ func StartClient(addr, user, pass, privateKeyPath string) {
 }
 
 func handleKeyDelivery(line string) {
+	line = strings.TrimSpace(line)
 	parts := strings.Split(line, ":")
 	if len(parts) < 3 {
 		return
 	}
 	encryptedKeyB64 := parts[2]
+	fmt.Printf("\n[DEBUG CLIENTE] Recibido Payload RSA de la sala: %s...\n", encryptedKeyB64[:50])
 
 	priv, ok := MyPrivateKey.(*rsa.PrivateKey)
 	if !ok {
@@ -158,12 +169,16 @@ func handleKeyDelivery(line string) {
 
 }
 func HandleUserJoined(line string, writer *bufio.Writer) {
+	if !IsHost {
+		return
+	}
 	parts := strings.SplitN(line, ":", 3)
 	if len(parts) < 3 {
 		return
 	}
 	targetUser := parts[1]
 	pubKeyb64 := parts[2]
+	fmt.Printf("[DEBUG ] RSA Pública del usuario: %s\n", targetUser, pubKeyb64)
 
 	if len(CurrentRoom.AESKey) > 0 {
 		// Ciframos nuestra AES con la RSA Pública del que acaba de entrar
