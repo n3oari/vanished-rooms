@@ -1,8 +1,10 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"strings"
 )
 
 func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error {
@@ -46,6 +48,15 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 
 	queryInsert := `INSERT INTO participants (uuid_room, uuid_user) VALUES (?,?)`
 	_, err = tx.Exec(queryInsert, roomUUID, userUUID)
+
+	if err != nil {
+		tx.Rollback()
+		// IMPORTANTE: Primero verificamos si es error de duplicado
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return "", errors.New("You already in a room, use /leave first")
+		}
+		return "", errors.New("error al unirse a la sala")
+	}
 
 	if err != nil {
 		tx.Rollback()
