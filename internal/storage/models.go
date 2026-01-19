@@ -5,7 +5,8 @@ import "time"
 type Users struct {
 	UUID            string    `db:"uuid"`
 	Username        string    `db:"name"`
-	PasswordHash    string    `db:"password_hash"`
+	PasswordHash    []byte    `db:"password_hash"`
+	Salt            []byte    `db:"salt"`
 	PublicRSAKey    string    `db:"public_rsa_key"`
 	IsOwner         bool      `db:"is_owner"`
 	CurrentRoomUUID string    `db:"uuid_current_room"`
@@ -15,7 +16,8 @@ type Users struct {
 type Rooms struct {
 	UUID         string `db:"uuid"`
 	Name         string `db:"name"`
-	PasswordHash string `db:"password_hash"`
+	PasswordHash []byte `db:"password_hash"`
+	Salt         []byte `db:"salt"`
 }
 
 type Participants struct {

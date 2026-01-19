@@ -7,8 +7,8 @@ import (
 
 func (r *SQLiteRepository) CreateUser(u Users) error {
 
-	query := `INSERT INTO users (uuid, name, password_hash, public_rsa_key) VALUES (?,?,?,?)`
-	_, err := r.db.Exec(query, u.UUID, u.Username, u.PasswordHash, u.PublicRSAKey)
+	query := `INSERT INTO users (uuid, name, password_hash, public_rsa_key, salt) VALUES (?,?,?,?,?)`
+	_, err := r.db.Exec(query, u.UUID, u.Username, u.PasswordHash, u.PublicRSAKey, u.Salt)
 	log.Printf("[!] Error en CreateUser: %v", err)
 	return err
 }
@@ -29,25 +29,6 @@ func (r *SQLiteRepository) GetPubKeyByUsername(userTarget string) (string, error
 
 	return pubKey, nil
 }
-
-/*
-func (r *SQLiteRepository) ListAllUsersInRoom(roomUUID string) ([]Users, error) {
-	var users []Users
-
-	query := `
-	SELECT u.name
-	FROM users u
-	INNER JOIN participants p
-	ON u.uuid = p.uuid_user
-	WHERE p.uuid_room = ?`
-
-	rows, err := r.db.Query(query, roomUUID)
-	if err != nil {
-		return nil, err
-	}
-
-}
-*/
 
 func (r *SQLiteRepository) ListAllUsersInRoom(roomUUID string) ([]Users, error) {
 	var users []Users

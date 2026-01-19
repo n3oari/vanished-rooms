@@ -14,8 +14,8 @@ func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error 
 		return err
 	}
 
-	_, err = tx.Exec(`INSERT INTO rooms (uuid, name, password_hash) VALUES (?,?,?)`,
-		room.UUID, room.Name, room.PasswordHash)
+	_, err = tx.Exec(`INSERT INTO rooms (uuid, name, password_hash, salt) VALUES (?,?,?,?)`,
+		room.UUID, room.Name, room.PasswordHash, room.Salt)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -147,4 +147,14 @@ func (r *SQLiteRepository) ListAllRooms() ([]Rooms, error) {
 		return nil, err
 	}
 	return rooms, nil
+}
+
+func (r *SQLiteRepository) GetRoomCredentials(roomName string) (hash []byte, salt []byte, err error) {
+	query := `SELECT password_hash, salt FROM rooms WHERE name = ?`
+
+	err = r.db.QueryRow(query, roomName).Scan(&hash, &salt)
+	if err != nil {
+		return nil, nil, err
+	}
+	return hash, salt, nil
 }
