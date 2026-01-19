@@ -5,6 +5,7 @@ type Users struct {
 	Username        string `db:"name"`
 	PasswordHash    string `db:"password_hash"`
 	PublicRSAKey    string `db:"public_rsa_key"`
+	IsOwner         bool   `db:"owner"`
 	CurrentRoomUUID string
 }
 

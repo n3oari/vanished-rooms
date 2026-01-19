@@ -2,7 +2,7 @@ package storage
 
 func (r *SQLiteRepository) CreateUser(u Users) error {
 
-	query := `INSERT INTO users (uuid, name, password_hash, public_rsa_key) VALUES (?,?,?,?)`
+	query := `INSERT INTO users (uuid, name, password_hash, public_rsa_key, owner) VALUES (?,?,?,?)`
 	_, err := r.db.Exec(query, u.UUID, u.Username, u.PasswordHash, u.PublicRSAKey)
 	return err
 }
@@ -19,6 +19,24 @@ func (r *SQLiteRepository) GetPubKeyByUsername(userTarget string) (string, error
 	err := r.db.QueryRow(query, userTarget).Scan(&pubKey)
 	if err != nil {
 		return "", err
+	}
+
+	return pubKey, nil
+}
+
+func (r *SQLiteRepository) ListAllUsersInRoom(roomUUID string) ([]Users, error) {
+	var users []Users
+
+	query := `
+	SELECT u.name
+	FROM users u 
+	INNER JOIN participants p
+	ON u.uuid = p.uuid_user
+	WHERE p.uuid_room = ?`
+
+	rows, err := r.db.Query(query, roomUUID)
+	if err != nil {
+		return nil, err
 	}
 
 	return pubKey, nil
@@ -62,3 +80,44 @@ func (r *SQLiteRepository) RemoveParticipant(userUUID string, roomUUID string) e
 	_, err := r.db.Exec(query, userUUID, roomUUID)
 	return err
 }
+
+// this function is for verify the owner room status
+// if leaves, the room will be erased and everone kicked
+func (r *SQLiteRepository) OwnerHealthAndKickUsersFromRoom(userUUID, roomUUID string) error {
+	var ownerID string
+	err := r.db.QueryRow("SELECT owner_uuid FROM rooms WHERE uuid = ?", roomUUID).Scan(&ownerID)
+	if err != nil {
+		return nil
+	}
+
+	if ownerID == userUUID {
+		tx, err := r.db.Begin()
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.Exec(`DELETE FROM participants WHERE uuid_room = ?`, roomUUID)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+
+		_, err = tx.Exec(`DELETE FROM rooms WHERE uuid = ?`, roomUUID)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+
+		return tx.Commit()
+	}
+
+	return nil
+}
+
+func (r *SQLiteRepository) SetUserAsOwner(userUUID string, status int) error {
+	query := `UPDATE users SET is_owner = ? WHERE uuid = ?`
+	_, err := r.db.Exec(query, status, userUUID)
+	return err
+}
+
+// func (r  *SQLiteRepository) KickAllUsersFromRoom(roomUUID string ) error {}

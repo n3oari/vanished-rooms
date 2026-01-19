@@ -50,11 +50,13 @@ func StartClient(addr, user, pass, privateKeyPath string) {
 	fmt.Printf("[+] Connected to server as %s. Say something :)\n", user)
 
 	go func() {
-		scanner := bufio.NewScanner(conn)
-		for scanner.Scan() {
-			line := scanner.Text()
-			reader := bufio.NewReader(conn)
-			fmt.Printf("\n[SERVIDOR DICE]: %s\n> ", line)
+		//	scanner := bufio.NewScanner(conn)
+		reader := bufio.NewReader(conn)
+
+		for {
+			//	line := scanner.Text()
+			line, err := reader.ReadString('\n')
+			//fmt.Printf("\n[SERVIDOR DICE]: %s\n> ", line)
 			if strings.Contains(line, "created successfully") {
 				newKey, err := cryptoutils.GenerateAESKey()
 				if err != nil {
@@ -94,7 +96,7 @@ func StartClient(addr, user, pass, privateKeyPath string) {
 				return
 			}
 
-			line, err := reader.ReadString('\n')
+			//			line, err := reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("\n[!] El servidor ha cerrado la conexión.")
 				os.Exit(0) //
