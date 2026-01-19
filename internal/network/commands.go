@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"vanished-rooms/internal/cryptoutils"
 	"vanished-rooms/internal/storage"
 )
 
@@ -23,18 +24,32 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 		roomName = strings.TrimSpace(roomName)
 		roomPass = strings.TrimSpace(roomPass)
 
+		if len(roomPass) < 10 || len(roomPass) > 30 {
+			fmt.Fprintln(conn, "[!] The password must be at least 10 characters long.")
+			return
+		}
+
 		if roomName == "" || roomPass == "" {
 			fmt.Fprintln(conn, "[!] Usage: /create -n <room_name> -p <room_password>")
 			break
 		}
 
+		salt, err := cryptoutils.GenerarSalt()
+		if err != nil {
+			fmt.Fprintf(conn, "[!] Error generating salt: %v\n", err)
+			break
+		}
+
+		hash := cryptoutils.HashPassword(roomPass, salt)
+
 		newRoom := storage.Rooms{
 			UUID:         generateUUID(),
 			Name:         roomName,
-			PasswordHash: roomPass,
+			PasswordHash: hash,
+			Salt:         salt,
 		}
 
-		err := sv.SQLiteRepository.CreateAndJoinRoom(newRoom, User.UUID)
+		err = sv.SQLiteRepository.CreateAndJoinRoom(newRoom, User.UUID)
 		if err != nil {
 			fmt.Fprintf(conn, "[!] Database Error: %v\n", err)
 			break

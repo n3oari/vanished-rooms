@@ -54,15 +54,21 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 		User.Username = scanner.Text()
 	}
 	if scanner.Scan() {
-		User.PasswordHash = scanner.Text()
-		hash, err := cryptoutils.HashPassword(User.PasswordHash)
+		plainPassword := scanner.Text()
+
+		salt, err := cryptoutils.GenerarSalt()
 		if err != nil {
-			fmt.Fprintf(conn, "[!] Error hashing : %v\n", err)
+			fmt.Fprintf(conn, "[!] Error generating salt: %v\n", err)
 			return
 		}
-		if cryptoutils.VerifyPassword(User.PasswordHash, hash) {
+
+		hash := cryptoutils.HashPassword(plainPassword, salt)
+
+		if cryptoutils.VerifyPassword(plainPassword, salt, hash) {
 			fmt.Println("[+] Hash verified successfully")
+
 			User.PasswordHash = hash
+			User.Salt = salt
 		}
 
 	}
