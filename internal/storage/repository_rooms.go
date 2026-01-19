@@ -27,6 +27,16 @@ func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error 
 		tx.Rollback()
 		return err
 	}
+
+	_, err = tx.Exec(`
+	UPDATE users SET 
+	is_owner = 1, uuid_current_room = ?, joined_at = CURRENT_TIMESTAMP  WHERE uuid = ?`,
+		room.UUID, userUUID)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 	log.Println("[+] Transaction done! Room created and user joined successfully")
 	return tx.Commit()
 }
@@ -51,13 +61,20 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 
 	if err != nil {
 		tx.Rollback()
-		// IMPORTANTE: Primero verificamos si es error de duplicado
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return "", errors.New("You already in a room, use /leave first")
 		}
 		return "", errors.New("error al unirse a la sala")
 	}
 
+	queryUpdate := `
+	UPDATE users SET
+	uuid_current_room = ?,
+	is_owner = 0,
+	joined_at = CURRENT_TIMESTAMP
+	WHERE uuid = ?`
+
+	_, err = tx.Exec(queryUpdate, roomUUID, userUUID)
 	if err != nil {
 		tx.Rollback()
 		return "", err
@@ -96,7 +113,6 @@ func (r *SQLiteRepository) LeaveRoomAndDeleteRoomIfEmpty(userUUID, roomUUID stri
 	}
 
 	return tx.Commit()
-
 }
 
 func (r *SQLiteRepository) DeleteRoom(roomUUID string) error {
@@ -130,6 +146,5 @@ func (r *SQLiteRepository) ListAllRooms() ([]Rooms, error) {
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-
 	return rooms, nil
 }

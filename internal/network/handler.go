@@ -3,6 +3,7 @@ package network
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"strings"
 	"vanished-rooms/internal/cryptoutils"
@@ -15,17 +16,35 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 
 	defer func() {
 		sv.mu.Lock()
-		roomToDelete := User.CurrentRoomUUID
-		delete(sv.clients, UUID)
-		delete(sv.usersInRoom, UUID)
+		// Sacamos la info REAL del mapa antes de borrar
+		uState, exists := sv.UsersInRoom[UUID]
+		if !exists {
+			sv.mu.Unlock()
+			return
+		}
+
+		roomID := uState.CurrentRoomUUID
+		wasOwner := uState.IsOwner
+		userName := uState.Username
+
+		// Ahora sí, borramos de los mapas de memoria
+		delete(sv.Clients, UUID)
+		delete(sv.UsersInRoom, UUID)
 		sv.mu.Unlock()
 
-		if roomToDelete != "" {
-			sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(UUID, roomToDelete)
+		// Lógica de promoción
+		if roomID != "" && wasOwner {
+			log.Printf("[DEBUG] Host %s saliendo. Buscando sucesor...", userName)
+			newHost, err := sv.SQLiteRepository.PromoteNextHost(roomID, UUID)
+			if err == nil && newHost != "" {
+				log.Printf("[DEBUG] Nuevo Host encontrado: %s", newHost)
+				NotifyPromotion(sv, newHost)
+			}
 		}
-		if User.UUID != "" {
-			sv.SQLiteRepository.DeleteUser(User)
-		}
+
+		// Limpieza final en DB
+		sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(UUID, roomID)
+		sv.SQLiteRepository.DeleteUser(*uState)
 		conn.Close()
 	}()
 
@@ -53,8 +72,8 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 	User.UUID = UUID
 
 	sv.mu.Lock()
-	sv.clients[UUID] = conn
-	sv.usersInRoom[UUID] = &User
+	sv.Clients[UUID] = conn
+	sv.UsersInRoom[UUID] = &User
 	sv.mu.Unlock()
 	sv.SQLiteRepository.CreateUser(User)
 
@@ -67,7 +86,7 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 		}
 
 		sv.mu.Lock()
-		u := sv.usersInRoom[UUID]
+		u := sv.UsersInRoom[UUID]
 		sv.mu.Unlock()
 
 		if strings.HasPrefix(msg, "/") {
@@ -83,6 +102,29 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 		fmt.Printf("[Room -> %s][%s]: %s\n", u.Username, u.Username, msg)
 		// encrytped msg
 		roomMsg := fmt.Sprintf("[%s]: %s", u.Username, msg)
-		sv.broadcast(roomMsg, conn, u.CurrentRoomUUID, sv.usersInRoom)
+		sv.broadcast(roomMsg, conn, u.CurrentRoomUUID, sv.UsersInRoom)
 	}
+}
+
+func NotifyPromotion(sv *Server, newHostUUID string) {
+	sv.mu.Lock()
+	user, okUser := sv.UsersInRoom[newHostUUID]
+	clientConn, okConn := sv.Clients[newHostUUID]
+	sv.mu.Unlock()
+
+	if !okUser || !okConn {
+		log.Printf("[!] No se pudo encontrar al nuevo host %s en memoria para notificar", newHostUUID)
+		return
+	}
+
+	_, err := fmt.Fprintln(clientConn, "SYSTEM_CMD:PROMOTED_TO_HOST")
+
+	if err != nil {
+		log.Printf("[!] Error enviando comando al nuevo host %s: %v", user.Username, err)
+	} else {
+		log.Printf("[+] Mensaje enviado: %s es el nuevo Host", user.Username)
+	}
+
+	msg := fmt.Sprintf("[!] El usuario %s es ahora el Host de la sala.\n", user.Username)
+	sv.broadcast(msg, nil, user.CurrentRoomUUID, sv.UsersInRoom)
 }

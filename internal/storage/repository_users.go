@@ -1,9 +1,15 @@
 package storage
 
+import (
+	"database/sql"
+	"log"
+)
+
 func (r *SQLiteRepository) CreateUser(u Users) error {
 
-	query := `INSERT INTO users (uuid, name, password_hash, public_rsa_key, owner) VALUES (?,?,?,?)`
+	query := `INSERT INTO users (uuid, name, password_hash, public_rsa_key) VALUES (?,?,?,?)`
 	_, err := r.db.Exec(query, u.UUID, u.Username, u.PasswordHash, u.PublicRSAKey)
+	log.Printf("[!] Error en CreateUser: %v", err)
 	return err
 }
 
@@ -24,12 +30,13 @@ func (r *SQLiteRepository) GetPubKeyByUsername(userTarget string) (string, error
 	return pubKey, nil
 }
 
+/*
 func (r *SQLiteRepository) ListAllUsersInRoom(roomUUID string) ([]Users, error) {
 	var users []Users
 
 	query := `
 	SELECT u.name
-	FROM users u 
+	FROM users u
 	INNER JOIN participants p
 	ON u.uuid = p.uuid_user
 	WHERE p.uuid_room = ?`
@@ -39,15 +46,15 @@ func (r *SQLiteRepository) ListAllUsersInRoom(roomUUID string) ([]Users, error) 
 		return nil, err
 	}
 
-	return pubKey, nil
 }
+*/
 
 func (r *SQLiteRepository) ListAllUsersInRoom(roomUUID string) ([]Users, error) {
 	var users []Users
 
 	query := `
 	SELECT u.name
-	FROM users u 
+	FROM users u
 	INNER JOIN participants p
 	ON u.uuid = p.uuid_user
 	WHERE p.uuid_room = ?`
@@ -83,6 +90,7 @@ func (r *SQLiteRepository) RemoveParticipant(userUUID string, roomUUID string) e
 
 // this function is for verify the owner room status
 // if leaves, the room will be erased and everone kicked
+/*
 func (r *SQLiteRepository) OwnerHealthAndKickUsersFromRoom(userUUID, roomUUID string) error {
 	var ownerID string
 	err := r.db.QueryRow("SELECT owner_uuid FROM rooms WHERE uuid = ?", roomUUID).Scan(&ownerID)
@@ -112,6 +120,44 @@ func (r *SQLiteRepository) OwnerHealthAndKickUsersFromRoom(userUUID, roomUUID st
 	}
 
 	return nil
+}
+*/
+
+func (r *SQLiteRepository) PromoteNextHost(roomUUID, leavingUserUUID string) (string, error) {
+	var nextUserUUID string
+	query := `
+    SELECT uuid FROM users
+    WHERE uuid_current_room = ?
+    AND uuid != ?
+    ORDER BY joined_at ASC
+    LIMIT 1`
+
+	err := r.db.QueryRow(query, roomUUID, leavingUserUUID).Scan(&nextUserUUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		return "", err
+	}
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return "", err
+	}
+
+	_, err = tx.Exec(`UPDATE users SET is_owner = 0 WHERE uuid = ?`, leavingUserUUID)
+	if err != nil {
+		tx.Rollback()
+		return "", nil
+	}
+
+	_, err = tx.Exec(`UPDATE users SET is_owner = 1 WHERE uuid = ?`, nextUserUUID)
+	if err != nil {
+		return "", err
+	}
+
+	err = tx.Commit()
+	return nextUserUUID, nil
 }
 
 func (r *SQLiteRepository) SetUserAsOwner(userUUID string, status int) error {
