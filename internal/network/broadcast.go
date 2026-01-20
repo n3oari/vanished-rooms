@@ -7,7 +7,7 @@ import (
 	"vanished-rooms/internal/storage"
 )
 
-func (sv *Server) broadcast(msg string, sender net.Conn, roomUUID string, allUsers map[string]*storage.Users) {
+func (sv *Server) Broadcast(msg string, sender net.Conn, roomUUID string, allUsers map[string]*storage.Users) {
 	if roomUUID == "" {
 		return
 	}

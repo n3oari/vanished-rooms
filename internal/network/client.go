@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"time"
 	"vanished-rooms/internal/cryptoutils"
 	"vanished-rooms/internal/ui"
 )
@@ -21,12 +24,39 @@ var (
 	IsHost       bool
 )
 
-func StartClient(addr, user, pass, privateKeyPath string) {
+func StartClient(addr string, user string, pass string, privateKeyPath string, tor bool, proxy string) {
 	ui.PrintRandomBanner()
 
-	if len(pass) < 10 || len(pass) > 30 {
-		fmt.Println("[!] The password must be at least 10 characters long and less than 30.")
-		return
+	var httpClient *http.Client
+	var err error
+
+	if tor {
+		fmt.Println("TOR MODE: Active")
+		httpClient, err = NewTorClient()
+		if err != nil {
+			fmt.Printf("CRITICAL ERROR: Could not initialize TOR: %v\n", err)
+			return
+		}
+	} else if proxy != "" {
+		fmt.Printf("PROXY MODE: Routing through %s\n", proxy)
+
+		proxyURL, _ := url.Parse("http://" + proxy)
+		transport := &http.Transport{
+			Proxy: http.ProxyURL(proxyURL),
+		}
+		httpClient = &http.Client{
+			Transport: transport,
+			Timeout:   15 * time.Second,
+		}
+	} else {
+		fmt.Println("STANDARD MODE: Direct connection")
+		httpClient = &http.Client{Timeout: 10 * time.Second}
+	}
+
+	resp, err := httpClient.Get("https://check.torproject.org/api/ip")
+	if err == nil {
+		defer resp.Body.Close()
+		fmt.Println("Connection established successfully.")
 	}
 
 	privRSA, ok := MyPrivateKey.(*rsa.PrivateKey)
