@@ -17,8 +17,8 @@ func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error 
 		return err
 	}
 
-	_, err = tx.Exec(`INSERT INTO rooms (uuid, name, password_hash, salt) VALUES (?,?,?,?)`,
-		room.UUID, room.Name, room.PasswordHash, room.Salt)
+	_, err = tx.Exec(`INSERT INTO rooms (uuid, name, password_hash, salt,private) VALUES (?,?,?,?,?)`,
+		room.UUID, room.Name, room.PasswordHash, room.Salt, room.Private)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -132,7 +132,7 @@ func (r *SQLiteRepository) DeleteRoom(roomUUID string) error {
 
 func (r *SQLiteRepository) ListAllRooms() ([]Rooms, error) {
 	var rooms []Rooms
-	query := `SELECT name FROM rooms WHERE private != 0`
+	query := `SELECT name FROM rooms WHERE private = 0`
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
