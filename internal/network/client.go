@@ -24,6 +24,11 @@ var (
 func StartClient(addr, user, pass, privateKeyPath string) {
 	ui.PrintRandomBanner()
 
+	if len(pass) < 10 || len(pass) > 30 {
+		fmt.Println("[!] The password must be at least 10 characters long and less than 30.")
+		return
+	}
+
 	privRSA, ok := MyPrivateKey.(*rsa.PrivateKey)
 	if !ok {
 		log.Fatal("[!] MyPrivateKey no es una llave RSA válida")

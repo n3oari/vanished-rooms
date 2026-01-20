@@ -4,7 +4,7 @@ else
     CLEAR = clear
 endif
 
-CLIENT_ARGS = -p test -k ./resources/privada.pem
+CLIENT_ARGS = -p testtest123415 -k ./resources/privada.pem
 DB_PATH = ./internal/storage/sqlite.db
 
 help:

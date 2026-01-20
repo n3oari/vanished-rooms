@@ -20,19 +20,15 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 	case "/create":
 		roomName := extractFlag(msg, "-n")
 		roomPass := extractFlag(msg, "-p")
-		//		private := extractFlag(msg, "-private")
+		isPrivate := extractFlag(msg, "--private")
 
 		roomName = strings.TrimSpace(roomName)
 		roomPass = strings.TrimSpace(roomPass)
+		isPrivate = strings.TrimSpace(isPrivate)
+		privacyChoice := false
 
-		/*
-			if len(roomPass) < 10 || len(roomPass) > 30 {
-				fmt.Fprintln(conn, "[!] The password must be at least 10 characters long.")
-				return
-			}
-		*/
-		if roomName == "" || roomPass == "" {
-			fmt.Fprintln(conn, "[!] Usage: /create -n <room_name> -p <room_password>")
+		if roomName == "" || roomPass == "" || isPrivate == "" {
+			fmt.Fprintln(conn, "[!] Usage: /create -n <room_name> -p <room_password> --private <y/n>")
 			break
 		}
 
@@ -44,11 +40,21 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 
 		hash := cryptoutils.HashPassword(roomPass, salt)
 
+		if isPrivate == "y" {
+			privacyChoice = true
+		} else if isPrivate == "n" {
+			privacyChoice = false
+		} else {
+			fmt.Fprintln(conn, "[!] Invalid privacy option. Use 'y' or 'n'.")
+			break
+		}
+
 		newRoom := storage.Rooms{
 			UUID:         generateUUID(),
 			Name:         roomName,
 			PasswordHash: hash,
 			Salt:         salt,
+			Private:      privacyChoice,
 		}
 
 		err = sv.SQLiteRepository.CreateAndJoinRoom(newRoom, User.UUID)
