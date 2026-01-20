@@ -16,7 +16,6 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 
 	defer func() {
 		sv.mu.Lock()
-		// Sacamos la info REAL del mapa antes de borrar
 		uState, exists := sv.UsersInRoom[UUID]
 		if !exists {
 			sv.mu.Unlock()
@@ -27,12 +26,10 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 		wasOwner := uState.IsOwner
 		userName := uState.Username
 
-		// Ahora sí, borramos de los mapas de memoria
 		delete(sv.Clients, UUID)
 		delete(sv.UsersInRoom, UUID)
 		sv.mu.Unlock()
 
-		// Lógica de promoción
 		if roomID != "" && wasOwner {
 			log.Printf("[DEBUG] Host %s saliendo. Buscando sucesor...", userName)
 			newHost, err := sv.SQLiteRepository.PromoteNextHost(roomID, UUID)
@@ -42,7 +39,6 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 			}
 		}
 
-		// Limpieza final en DB
 		sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(UUID, roomID)
 		sv.SQLiteRepository.DeleteUser(*uState)
 		conn.Close()
