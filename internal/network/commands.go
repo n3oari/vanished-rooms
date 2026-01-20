@@ -20,15 +20,17 @@ func (sv *Server) HandleInternalCommand(conn net.Conn, User *storage.Users, msg 
 	case "/create":
 		roomName := extractFlag(msg, "-n")
 		roomPass := extractFlag(msg, "-p")
+		//		private := extractFlag(msg, "-private")
 
 		roomName = strings.TrimSpace(roomName)
 		roomPass = strings.TrimSpace(roomPass)
 
-		if len(roomPass) < 10 || len(roomPass) > 30 {
-			fmt.Fprintln(conn, "[!] The password must be at least 10 characters long.")
-			return
-		}
-
+		/*
+			if len(roomPass) < 10 || len(roomPass) > 30 {
+				fmt.Fprintln(conn, "[!] The password must be at least 10 characters long.")
+				return
+			}
+		*/
 		if roomName == "" || roomPass == "" {
 			fmt.Fprintln(conn, "[!] Usage: /create -n <room_name> -p <room_password>")
 			break

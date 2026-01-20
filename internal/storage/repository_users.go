@@ -9,8 +9,13 @@ func (r *SQLiteRepository) CreateUser(u Users) error {
 
 	query := `INSERT INTO users (uuid, name, password_hash, public_rsa_key, salt) VALUES (?,?,?,?,?)`
 	_, err := r.db.Exec(query, u.UUID, u.Username, u.PasswordHash, u.PublicRSAKey, u.Salt)
+	if err != nil {
+		return err
+	}
+
 	log.Printf("[!] Error en CreateUser: %v", err)
-	return err
+
+	return nil
 }
 
 func (r *SQLiteRepository) DeleteUser(u Users) error {
@@ -68,41 +73,6 @@ func (r *SQLiteRepository) RemoveParticipant(userUUID string, roomUUID string) e
 	_, err := r.db.Exec(query, userUUID, roomUUID)
 	return err
 }
-
-// this function is for verify the owner room status
-// if leaves, the room will be erased and everone kicked
-/*
-func (r *SQLiteRepository) OwnerHealthAndKickUsersFromRoom(userUUID, roomUUID string) error {
-	var ownerID string
-	err := r.db.QueryRow("SELECT owner_uuid FROM rooms WHERE uuid = ?", roomUUID).Scan(&ownerID)
-	if err != nil {
-		return nil
-	}
-
-	if ownerID == userUUID {
-		tx, err := r.db.Begin()
-		if err != nil {
-			return err
-		}
-
-		_, err = tx.Exec(`DELETE FROM participants WHERE uuid_room = ?`, roomUUID)
-		if err != nil {
-			_ = tx.Rollback()
-			return err
-		}
-
-		_, err = tx.Exec(`DELETE FROM rooms WHERE uuid = ?`, roomUUID)
-		if err != nil {
-			_ = tx.Rollback()
-			return err
-		}
-
-		return tx.Commit()
-	}
-
-	return nil
-}
-*/
 
 func (r *SQLiteRepository) PromoteNextHost(roomUUID, leavingUserUUID string) (string, error) {
 	var nextUserUUID string

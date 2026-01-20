@@ -1,10 +1,13 @@
 package storage
 
 import (
+	"bytes"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"strings"
+	"vanished-rooms/internal/cryptoutils"
 )
 
 func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error {
@@ -41,48 +44,51 @@ func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error 
 	return tx.Commit()
 }
 
-func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string, error) {
+/*
+*
+* */
 
+func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return "", err
 	}
-	var roomUUID string
-	querySelect := (`SELECT uuid  FROM rooms WHERE name = ? AND password_hash = ?`)
-	err = tx.QueryRow(querySelect, nameRoom, passRoom).Scan(&roomUUID)
+	defer tx.Rollback()
 
+	var roomUUID, storedHash, salt string
+
+	querySelect := `SELECT uuid, password_hash, salt FROM rooms WHERE name = ?`
+	err = tx.QueryRow(querySelect, nameRoom).Scan(&roomUUID, &storedHash, &salt)
 	if err != nil {
-		tx.Rollback()
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", errors.New("room not found")
+		}
 		return "", err
+	}
+
+	inputHash := cryptoutils.HashPassword(passRoom, []byte(salt))
+	if !bytes.Equal(inputHash, []byte(storedHash)) {
+		return "", errors.New("invalid credentials")
 	}
 
 	queryInsert := `INSERT INTO participants (uuid_room, uuid_user) VALUES (?,?)`
-	_, err = tx.Exec(queryInsert, roomUUID, userUUID)
-
-	if err != nil {
-		tx.Rollback()
+	if _, err = tx.Exec(queryInsert, roomUUID, userUUID); err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-			return "", errors.New("You already in a room, use /leave first")
+			return "", errors.New("already in room")
 		}
-		return "", errors.New("error al unirse a la sala")
-	}
-
-	queryUpdate := `
-	UPDATE users SET
-	uuid_current_room = ?,
-	is_owner = 0,
-	joined_at = CURRENT_TIMESTAMP
-	WHERE uuid = ?`
-
-	_, err = tx.Exec(queryUpdate, roomUUID, userUUID)
-	if err != nil {
-		tx.Rollback()
 		return "", err
 	}
-	log.Printf("[+] Transaction done! Room created and user joined successfully\n roomUUID -> %s", roomUUID)
-	err = tx.Commit()
-	return roomUUID, err
 
+	queryUpdate := `UPDATE users SET uuid_current_room = ?, is_owner = 0, joined_at = CURRENT_TIMESTAMP WHERE uuid = ?`
+	if _, err = tx.Exec(queryUpdate, roomUUID, userUUID); err != nil {
+		return "", err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return "", err
+	}
+
+	return roomUUID, nil
 }
 
 func (r *SQLiteRepository) LeaveRoomAndDeleteRoomIfEmpty(userUUID, roomUUID string) error {
