@@ -108,6 +108,9 @@ func (r *SQLiteRepository) PromoteNextHost(roomUUID, leavingUserUUID string) (st
 	}
 
 	err = tx.Commit()
+	if err != nil {
+		return "", err
+	}
 	return nextUserUUID, nil
 }
 
