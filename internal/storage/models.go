@@ -18,6 +18,7 @@ type Rooms struct {
 	Name         string `db:"name"`
 	PasswordHash []byte `db:"password_hash"`
 	Salt         []byte `db:"salt"`
+	Private      bool   `db:"private"`
 }
 
 type Participants struct {
