@@ -132,7 +132,7 @@ func (r *SQLiteRepository) DeleteRoom(roomUUID string) error {
 
 func (r *SQLiteRepository) ListAllRooms() ([]Rooms, error) {
 	var rooms []Rooms
-	query := `SELECT name FROM rooms`
+	query := `SELECT name FROM rooms WHERE private != 0`
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
