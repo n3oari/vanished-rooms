@@ -22,8 +22,7 @@ var clientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "Run as client and register",
 	Run: func(cmd *cobra.Command, args []string) {
-		priv, _ := prepareKeys(privateKeyPath)
-		network.MyPrivateKey = priv
+		priv, pubKeyToSend := prepareKeys(privateKeyPath)
 
 		if tor {
 			fmt.Println("[TOR] Trying to connect through onion protocol in 127.0.0.1:9050...")
@@ -32,7 +31,7 @@ var clientCmd = &cobra.Command{
 		} else {
 			fmt.Println("[STANDARD] Normal connection")
 		}
-		network.StartClient("localhost:8080", username, password, privateKeyPath, tor, proxyAddr)
+		network.StartClient("localhost:8080", username, password, pubKeyToSend, tor, proxyAddr, priv)
 	},
 }
 

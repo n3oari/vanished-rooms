@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"vanished-rooms/internal/storage"
 )
 
-func (sv *Server) Broadcast(msg string, sender net.Conn, roomUUID string, allUsers map[string]*storage.Users) {
+func (sv *Server) Broadcast(msg string, sender net.Conn, roomUUID string) {
 	if roomUUID == "" {
 		return
 	}
@@ -15,19 +14,16 @@ func (sv *Server) Broadcast(msg string, sender net.Conn, roomUUID string, allUse
 	sv.mu.Lock()
 	defer sv.mu.Unlock()
 
-	for id, clientConn := range sv.Clients {
-		if clientConn == sender {
+	for id, session := range sv.Clients {
+		if session.Conn == sender {
 			continue
 		}
-		user, exists := allUsers[id]
-		if exists && user.CurrentRoomUUID == roomUUID {
-			// 3. Enviamos el mensaje
-			_, err := fmt.Fprintln(clientConn, msg)
 
+		if session.Room == roomUUID {
+			_, err := fmt.Fprintln(session.Conn, msg)
 			if err != nil {
-				log.Printf("[!] Error sending the message a %s (ID: %s): %v\n", user.Username, id, err)
+				log.Printf("[!] Error sending message to %s (ID: %s): %v\n", session.Username, id, err)
 			}
 		}
-
 	}
 }

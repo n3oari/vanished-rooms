@@ -44,14 +44,10 @@ func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error 
 	return tx.Commit()
 }
 
-/*
-*
-* */
-
-func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string, error) {
+func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string, string, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer tx.Rollback()
 
@@ -61,34 +57,41 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 	err = tx.QueryRow(querySelect, nameRoom).Scan(&roomUUID, &storedHash, &salt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", errors.New("room not found")
+			return "", "", errors.New("room not found")
 		}
-		return "", err
+		return "", "", err
 	}
 
 	inputHash := cryptoutils.HashPassword(passRoom, []byte(salt))
 	if !bytes.Equal(inputHash, []byte(storedHash)) {
-		return "", errors.New("invalid credentials")
+		return "", "", errors.New("invalid credentials")
+	}
+
+	var hostUUID string
+	queryHost := `SELECT uuid FROM users WHERE uuid_current_room = ? AND is_owner = 1 LIMIT 1`
+	err = tx.QueryRow(queryHost, roomUUID).Scan(&hostUUID)
+	if err != nil {
+		hostUUID = ""
 	}
 
 	queryInsert := `INSERT INTO participants (uuid_room, uuid_user) VALUES (?,?)`
 	if _, err = tx.Exec(queryInsert, roomUUID, userUUID); err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-			return "", errors.New("already in room")
+			return "", "", errors.New("already in room")
 		}
-		return "", err
+		return "", "", err
 	}
 
 	queryUpdate := `UPDATE users SET uuid_current_room = ?, is_owner = 0, joined_at = CURRENT_TIMESTAMP WHERE uuid = ?`
 	if _, err = tx.Exec(queryUpdate, roomUUID, userUUID); err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if err = tx.Commit(); err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return roomUUID, nil
+	return roomUUID, hostUUID, nil
 }
 
 func (r *SQLiteRepository) LeaveRoomAndDeleteRoomIfEmpty(userUUID, roomUUID string) error {
