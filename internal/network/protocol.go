@@ -1,10 +1,12 @@
 package network
 
 const (
-	CmdPromotedHost = "SYSTEM_CMD:PROMOTED_TO_HOST"
+	EvChatMsg      = "CHAT_MSG"
+	EvKeyDelivery  = "KEY_DELIVERY"
+	EvUserJoined   = "USER_JOINED"
+	EvSystemInfo   = "SYSTEM_INFO"
+	EvHostPromoted = "HOST_PROMOTED"
 
-	PrefixKeyDelivery = "KEY_DELIVERY:"
-	PrefixUserJoined  = "USER_JOINED:"
-
-	StatusRoomCreated = "created successfully"
+	StatusRoomCreated = "created"
+	CmdPromotedHost   = "SYSTEM_CMD:PROMOTED_TO_HOST"
 )

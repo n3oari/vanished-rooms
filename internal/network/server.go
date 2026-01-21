@@ -10,24 +10,31 @@ import (
 	"github.com/google/uuid"
 )
 
+type ClientSession struct {
+	Conn      net.Conn
+	ID        string
+	Username  string
+	PublicKey string
+	Room      string
+}
+
 type Server struct {
-	Clients          map[string]net.Conn
-	UsersInRoom      map[string]*storage.Users
-	mu               sync.Mutex
+	Clients          map[string]*ClientSession
+	mu               sync.RWMutex // RWMutex es mejor para lecturas concurrentes
 	SQLiteRepository *storage.SQLiteRepository
 }
 
 func StartServer(port string, repository *storage.SQLiteRepository) {
 	ui.PrintRandomBanner()
+
 	sv := &Server{
-		Clients:          make(map[string]net.Conn),
-		UsersInRoom:      make(map[string]*storage.Users),
+		Clients:          make(map[string]*ClientSession),
 		SQLiteRepository: repository,
 	}
 
 	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
-		log.Println("Error starting server:", err)
+		log.Println("[-] Error starting server:", err)
 		return
 	}
 	defer listener.Close()
@@ -37,9 +44,10 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println("Error accepting connection:", err)
+			log.Println("[-] Error accepting connection:", err)
 			continue
 		}
+
 		go sv.HandleConnection(conn)
 	}
 }

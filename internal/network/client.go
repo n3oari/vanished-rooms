@@ -7,228 +7,220 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
-	"net/url"
 	"os"
 	"strings"
-	"time"
 	"vanished-rooms/internal/cryptoutils"
 	"vanished-rooms/internal/ui"
 )
 
-var (
-	CurrentRoom struct {
-		AESKey []byte
-	}
-	MyPrivateKey interface{}
-	IsHost       bool
-)
+type InternalEvent struct {
+	Type    string
+	Payload string
+}
 
-func StartClient(addr string, user string, pass string, privateKeyPath string, tor bool, proxy string) {
+type VanishedClient struct {
+	conn       net.Conn
+	reader     *bufio.Reader
+	aesKey     []byte
+	privateKey *rsa.PrivateKey
+	isHost     bool
+	username   string
+}
+
+func StartClient(addr string, user string, pass string, privateKeyPath string, tor bool, proxy string, privRSA *rsa.PrivateKey) {
 	ui.PrintRandomBanner()
 
-	var httpClient *http.Client
-	var err error
-
-	if tor {
-		fmt.Println("TOR MODE: Active")
-		httpClient, err = NewTorClient()
-		if err != nil {
-			fmt.Printf("CRITICAL ERROR: Could not initialize TOR: %v\n", err)
-			return
-		}
-	} else if proxy != "" {
-		fmt.Printf("PROXY MODE: Routing through %s\n", proxy)
-
-		proxyURL, _ := url.Parse("http://" + proxy)
-		transport := &http.Transport{
-			Proxy: http.ProxyURL(proxyURL),
-		}
-		httpClient = &http.Client{
-			Transport: transport,
-			Timeout:   15 * time.Second,
-		}
-	} else {
-		fmt.Println("STANDARD MODE: Direct connection")
-		httpClient = &http.Client{Timeout: 10 * time.Second}
+	if privRSA == nil {
+		log.Fatal("[!] Private RSA Key is nil")
 	}
 
-	resp, err := httpClient.Get("https://check.torproject.org/api/ip")
-	if err == nil {
-		defer resp.Body.Close()
-		fmt.Println("Connection established successfully.")
-	}
-
-	privRSA, ok := MyPrivateKey.(*rsa.PrivateKey)
-	if !ok {
-		log.Fatal("[!] MyPrivateKey no es una llave RSA válida")
-	}
-	pubKeyBytes, err := cryptoutils.EncodePublicKeyToBase64(privRSA) // Asegúrate de tener esta función
-	if err != nil {
-		log.Fatal("Error exportando llave pública")
-	}
-
-	fmt.Println("[+] Llave privada cargada en la interfaz correctamente.")
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
-		log.Fatalf("No se pudo conectar al servidor: %v", err)
+		log.Fatalf("[!] Connection failed: %v", err)
 	}
 	defer conn.Close()
 
-	writer := bufio.NewWriter(conn)
+	client := &VanishedClient{
+		conn:       conn,
+		reader:     bufio.NewReader(conn),
+		privateKey: privRSA,
+		username:   user,
+		isHost:     false,
+		aesKey:     make([]byte, 0),
+	}
 
-	fmt.Fprintln(writer, user)
-	fmt.Fprintln(writer, pass)
-	fmt.Fprintln(writer, pubKeyBytes)
+	pubKeyBytes, _ := cryptoutils.EncodePublicKeyToBase64(privRSA)
 
-	writer.Flush()
+	fmt.Fprintln(conn, user)
+	fmt.Fprintln(conn, pass)
+	fmt.Fprintln(conn, pubKeyBytes)
 
-	fmt.Printf("[+] Connected to server as %s. Say something :)\n", user)
+	go client.Listen()
 
-	go func() {
-		//	scanner := bufio.NewScanner(conn)
-		reader := bufio.NewReader(conn)
-
-		for {
-			//	line := scanner.Text()
-			line, err := reader.ReadString('\n')
-			//fmt.Printf("\n[SERVIDOR DICE]: %s\n> ", line)
-			if strings.Contains(line, "created successfully") {
-				newKey, err := cryptoutils.GenerateAESKey()
-				if err != nil {
-					fmt.Printf("\n[!] Error local al generar clave: %v\n", err)
-				} else {
-					CurrentRoom.AESKey = newKey
-					IsHost = true
-					fmt.Println("\n[!] Sala lista. Clave AES generada y guardada en memoria local.")
-				}
-			}
-
-			if strings.HasPrefix(line, "KEY_DELIVERY:") {
-				fmt.Printf("\n[DEBUG CLIENTE] Entrada cruda: %q\n", line)
-				handleKeyDelivery(line)
-				continue
-			}
-
-			if strings.HasPrefix(line, "USER_JOINED:") {
-				HandleUserJoined(line, writer)
-				continue
-			}
-
-			if strings.TrimSpace(line) == CmdPromotedHost {
-				IsHost = true
-				fmt.Println("\n[!] EL HOST ANTERIOR SE HA IDO. AHORA ERES EL DUEÑO DE LA SALA.")
-				fmt.Print("> ")
-
-			}
-
-			if strings.Contains(line, ": ") && !strings.HasPrefix(line, "[Server]") {
-				parts := strings.SplitN(line, ": ", 2)
-				usuario, junkData := parts[0], parts[1]
-
-				if len(CurrentRoom.AESKey) > 0 {
-					texto, err := cryptoutils.DecryptForChat(junkData, CurrentRoom.AESKey)
-					if err == nil {
-						fmt.Printf("\r[%s]: %s\n> ", usuario, texto)
-						continue
-					}
-				}
-			}
-
-			if line == `/quit\n` || line == `\quit\r\n` {
-				fmt.Println("\n[-] ..........Disconnecting ")
-				return
-			}
-
-			//			line, err := reader.ReadString('\n')
-			if err != nil {
-				fmt.Println("\n[!] El servidor ha cerrado la conexión.")
-				os.Exit(0) //
-			}
-
-			fmt.Printf("\r%s ", line)
-		}
-	}()
+	fmt.Printf("[+] Connected to server as %s.\n", user)
 
 	inputScanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("> ")
 	for inputScanner.Scan() {
 		text := strings.TrimSpace(inputScanner.Text())
-		if text == "" {
-			continue
+		if text == "/quit" {
+			return
 		}
-
-		if strings.HasPrefix(text, "/") {
-			fmt.Fprintln(writer, text)
-		} else if len(CurrentRoom.AESKey) > 0 {
-			junk, err := cryptoutils.EncryptForChat(text, CurrentRoom.AESKey)
-			if err == nil {
-				fmt.Printf("\n[DEBUG CLIENTE] Texto original: %s", text)
-				fmt.Printf("\n[DEBUG CLIENTE] Enviando 'junk data' (AES): %s", junk)
-				fmt.Printf("\n[DEBUG CLIENTE] Longitud del payload: %d bytes\n", len(junk))
-				fmt.Fprintln(writer, junk)
-			} else {
-				fmt.Fprintln(writer, text)
-			}
-		} else {
-			fmt.Fprintln(writer, text)
-		}
-		writer.Flush()
+		client.SendMessage(text)
 		fmt.Print("> ")
 	}
 }
 
-func handleKeyDelivery(line string) {
-	line = strings.TrimSpace(line)
-	parts := strings.Split(line, ":")
-	if len(parts) < 3 {
-		return
-	}
-	encryptedKeyB64 := parts[2]
-	fmt.Printf("\n[DEBUG CLIENTE] Recibido Payload RSA de la sala: %s...\n", encryptedKeyB64[:50])
-
-	priv, ok := MyPrivateKey.(*rsa.PrivateKey)
-	if !ok {
-		fmt.Println("\n[!] Error: No se encontró la clave privada local para descifrar.")
-		return
-	}
-
-	key, err := cryptoutils.DecryoptWithPrivateKey(encryptedKeyB64, priv)
-	if err != nil {
-		fmt.Printf("[!] Error al descifrar la llave de la sala: %v\n", err)
-		return
-	}
-
-	CurrentRoom.AESKey = key
-	fmt.Println("\n[!] Llave de sala recibida y activada. Ahora puedes leer los mensajes.")
-
-}
-func HandleUserJoined(line string, writer *bufio.Writer) {
-	if !IsHost {
-		return
-	}
-	parts := strings.SplitN(line, ":", 3)
-	if len(parts) < 3 {
-		return
-	}
-	targetUser := parts[1]
-	pubKeyb64 := parts[2]
-	fmt.Printf("[DEBUG ] RSA Pública del usuario: %s\n", targetUser, pubKeyb64)
-
-	if len(CurrentRoom.AESKey) > 0 {
-		// Ciframos nuestra AES con la RSA Pública del que acaba de entrar
-		encryptedKey, err := cryptoutils.EncryptWithPublicKey(CurrentRoom.AESKey, pubKeyb64)
+func (c *VanishedClient) Listen() {
+	for {
+		line, err := c.reader.ReadString('\n')
 		if err != nil {
-			fmt.Printf("\n[!] Error cifrando llave para %s: %v\n", targetUser, err)
+			fmt.Println("\n[!] Connection lost.")
+			os.Exit(0)
+		}
+		event := c.parseRawLine(line)
+		c.dispatch(event)
+	}
+}
+
+func (c *VanishedClient) SendMessage(text string) {
+	if text == "" {
+		return
+	}
+	if strings.HasPrefix(text, "/") {
+		fmt.Fprintln(c.conn, text)
+	} else if len(c.aesKey) > 0 {
+		encrypted, err := cryptoutils.EncryptForChat(text, c.aesKey)
+		if err == nil {
+			fmt.Fprintln(c.conn, encrypted)
+		} else {
+			fmt.Fprintln(c.conn, text)
+		}
+	} else {
+		fmt.Fprintln(c.conn, text)
+	}
+}
+
+func (c *VanishedClient) parseRawLine(line string) InternalEvent {
+	line = strings.TrimSpace(line)
+	if strings.HasPrefix(line, EvKeyDelivery+":") {
+		return InternalEvent{Type: EvKeyDelivery, Payload: line}
+	}
+	if strings.HasPrefix(line, EvUserJoined+":") {
+		return InternalEvent{Type: EvUserJoined, Payload: line}
+	}
+	if strings.Contains(line, StatusRoomCreated) {
+		return InternalEvent{Type: EvSystemInfo, Payload: line}
+	}
+	if strings.Contains(line, "PROMOTED") {
+		return InternalEvent{Type: EvHostPromoted, Payload: line}
+	}
+	return InternalEvent{Type: EvChatMsg, Payload: line}
+}
+
+func (c *VanishedClient) dispatch(event InternalEvent) {
+	switch event.Type {
+	case EvChatMsg:
+		c.processIncomingChat(event.Payload)
+	case EvKeyDelivery:
+		c.handleKeyDelivery(event.Payload)
+	case EvUserJoined:
+		c.handleUserJoined(event.Payload)
+	case EvSystemInfo:
+		c.handleSystemInfo(event.Payload)
+	case EvHostPromoted:
+		c.isHost = true
+		fmt.Println("\n[!] SYSTEM: You are now the HOST.")
+	}
+}
+
+func (c *VanishedClient) processIncomingChat(payload string) {
+	if strings.Contains(payload, ":") {
+		parts := strings.SplitN(payload, ": ", 2)
+		if len(parts) == 2 {
+			username, encryptedData := parts[0], strings.TrimSpace(parts[1])
+			if len(c.aesKey) > 0 {
+				decrypted, err := cryptoutils.DecryptForChat(encryptedData, c.aesKey)
+				if err == nil {
+					fmt.Printf("\r%s: %s\n> ", username, decrypted)
+					return
+				}
+			}
+		}
+	}
+	fmt.Printf("\r%s\n> ", payload)
+}
+
+func (c *VanishedClient) handleKeyDelivery(line string) {
+	payload := strings.TrimPrefix(line, EvKeyDelivery+":")
+	parts := strings.SplitN(payload, ":", 3)
+
+	if len(parts) < 3 {
+		return
+	}
+
+	subCommand := parts[0]
+	senderName := parts[1]
+	keyData := strings.TrimSpace(parts[2])
+
+	if subCommand == "FROM" {
+		fmt.Printf("\n[DEBUG CLIENT] WRAPPED AES RECEIVED FROM %s:\n%s\n", senderName, keyData)
+
+		decryptedKey, err := cryptoutils.DecryoptWithPrivateKey(keyData, c.privateKey)
+		if err != nil {
+			fmt.Printf("\n[!] Key decryption failed: %v\n", err)
 			return
 		}
 
-		encKeyB64 := base64.StdEncoding.EncodeToString(encryptedKey)
-
-		fmt.Fprintf(writer, "/sendKey %s %s\n", targetUser, encKeyB64)
-
-		writer.Flush()
-
-		fmt.Printf("\n[+] Llave de sala enviada a %s correctamente.\n> ", targetUser)
+		c.aesKey = decryptedKey
+		fmt.Printf("\n[+] AES Key established. Encryption ACTIVE.\n")
+	} else if subCommand == "REQ_FROM" {
+		fmt.Printf("\n[DEBUG CLIENT] RSA PUBLIC KEY FROM %s:\n%s\n", senderName, keyData)
+		c.processKeyRequest(senderName, keyData)
 	}
+}
+
+func (c *VanishedClient) handleUserJoined(payload string) {
+	if !c.isHost {
+		return
+	}
+
+	parts := strings.SplitN(payload, ":", 3)
+	if len(parts) < 3 {
+		return
+	}
+
+	targetUser := parts[1]
+	targetPubKey := strings.TrimSpace(parts[2])
+
+	c.processKeyRequest(targetUser, targetPubKey)
+}
+
+func (c *VanishedClient) handleSystemInfo(payload string) {
+	if strings.Contains(payload, StatusRoomCreated) {
+		newKey, err := cryptoutils.GenerateAESKey()
+		if err == nil {
+			c.aesKey = newKey
+			c.isHost = true
+			fmt.Printf("\n[!] SYSTEM: AES key generated. You are Host.")
+		}
+	}
+}
+
+func (c *VanishedClient) processKeyRequest(targetUser string, targetPubKey string) {
+	if len(c.aesKey) == 0 {
+		fmt.Println("\n[!] Error: No AES key to share.")
+		return
+	}
+
+	encryptedBytes, err := cryptoutils.EncryptWithPublicKey(c.aesKey, targetPubKey)
+	if err != nil {
+		fmt.Printf("\n[!] Encryption error: %v\n", err)
+		return
+	}
+
+	encKeyB64 := base64.StdEncoding.EncodeToString(encryptedBytes)
+
+	fmt.Fprintf(c.conn, "/sendKey %s %s\n", targetUser, encKeyB64)
+	fmt.Printf("\n[DEBUG HOST] Key sent to %s (Base64 encoded)\n", targetUser)
 }

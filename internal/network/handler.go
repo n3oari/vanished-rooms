@@ -12,74 +12,72 @@ import (
 
 func (sv *Server) HandleConnection(conn net.Conn) {
 	UUID := generateUUID()
-	var User storage.Users
+	var user storage.Users
 
 	defer func() {
 		sv.mu.Lock()
-		uState, exists := sv.UsersInRoom[UUID]
+		session, exists := sv.Clients[UUID]
 		if !exists {
 			sv.mu.Unlock()
 			return
 		}
 
-		roomID := uState.CurrentRoomUUID
-		wasOwner := uState.IsOwner
-		userName := uState.Username
+		roomID := session.Room
+		userName := session.Username
 
 		delete(sv.Clients, UUID)
-		delete(sv.UsersInRoom, UUID)
 		sv.mu.Unlock()
 
-		if roomID != "" && wasOwner {
-			log.Printf("[DEBUG] Host %s saliendo. Buscando sucesor...", userName)
+		if roomID != "" {
+			log.Printf("[DEBUG] User %s exiting. Cleaning up room...", userName)
 			newHost, err := sv.SQLiteRepository.PromoteNextHost(roomID, UUID)
 			if err == nil && newHost != "" {
-				log.Printf("[DEBUG] Nuevo Host encontrado: %s", newHost)
+				log.Printf("[DEBUG] New host found for room %s: %s", roomID, newHost)
 				NotifyPromotion(sv, newHost)
 			}
+			sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(UUID, roomID)
 		}
 
-		sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(UUID, roomID)
-		sv.SQLiteRepository.DeleteUser(*uState)
+		sv.SQLiteRepository.DeleteUser(storage.Users{UUID: UUID})
 		conn.Close()
+		log.Printf("[DEBUG] Connection closed for UUID: %s", UUID)
 	}()
 
 	scanner := bufio.NewScanner(conn)
 
-	if scanner.Scan() {
-		User.Username = scanner.Text()
+	if !scanner.Scan() {
+		return
 	}
-	if scanner.Scan() {
-		plainPassword := scanner.Text()
+	user.Username = scanner.Text()
 
-		salt, err := cryptoutils.GenerarSalt()
-		if err != nil {
-			fmt.Fprintf(conn, "[!] Error generating salt: %v\n", err)
-			return
-		}
-
-		hash := cryptoutils.HashPassword(plainPassword, salt)
-
-		if cryptoutils.VerifyPassword(plainPassword, salt, hash) {
-			fmt.Println("[+] Hash verified successfully")
-
-			User.PasswordHash = hash
-			User.Salt = salt
-		}
-
+	if !scanner.Scan() {
+		return
 	}
-	if scanner.Scan() {
-		User.PublicRSAKey = scanner.Text()
+	plainPassword := scanner.Text()
+
+	if !scanner.Scan() {
+		return
 	}
-	User.UUID = UUID
+	user.PublicRSAKey = scanner.Text()
+
+	salt, _ := cryptoutils.GenerarSalt()
+	user.PasswordHash = cryptoutils.HashPassword(plainPassword, salt)
+	user.Salt = salt
+	user.UUID = UUID
+
+	sv.SQLiteRepository.CreateUser(user)
 
 	sv.mu.Lock()
-	sv.Clients[UUID] = conn
-	sv.UsersInRoom[UUID] = &User
+	sv.Clients[UUID] = &ClientSession{
+		Conn:      conn,
+		ID:        UUID,
+		Username:  user.Username,
+		PublicKey: user.PublicRSAKey,
+		Room:      "",
+	}
 	sv.mu.Unlock()
-	sv.SQLiteRepository.CreateUser(User)
 
-	fmt.Printf("[+] Nuevo usuario: %s\n", User.Username)
+	log.Printf("[DEBUG] New authenticated user: %s (ID: %s)", user.Username, UUID)
 
 	for scanner.Scan() {
 		msg := strings.TrimSpace(scanner.Text())
@@ -87,46 +85,44 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 			continue
 		}
 
-		sv.mu.Lock()
-		u := sv.UsersInRoom[UUID]
-		sv.mu.Unlock()
+		sv.mu.RLock()
+		session, exists := sv.Clients[UUID]
+		sv.mu.RUnlock()
+
+		if !exists {
+			break
+		}
 
 		if strings.HasPrefix(msg, "/") {
-			sv.HandleInternalCommand(conn, u, msg)
+			sv.HandleInternalCommand(conn, &user, msg)
 			continue
 		}
 
-		if u.CurrentRoomUUID == "" {
-			fmt.Fprintln(conn, "[!] Debes entrar a una sala con /join")
+		if session.Room == "" {
+			fmt.Fprintf(conn, "%s:[!] You must join a room first using /join\n", EvSystemInfo)
 			continue
 		}
 
-		fmt.Printf("[Room -> %s][%s]: %s\n", u.Username, u.Username, msg)
-		// encrytped msg
-		roomMsg := fmt.Sprintf("[%s]: %s", u.Username, msg)
-		sv.broadcast(roomMsg, conn, u.CurrentRoomUUID, sv.UsersInRoom)
+		log.Printf("[DEBUG SERVER] INCOMING JUNK DATA from %s: %s", user.Username, msg)
+
+		roomMsg := fmt.Sprintf("%s:[%s]: %s", EvChatMsg, user.Username, msg)
+		sv.Broadcast(roomMsg, conn, session.Room)
 	}
 }
 
 func NotifyPromotion(sv *Server, newHostUUID string) {
-	sv.mu.Lock()
-	user, okUser := sv.UsersInRoom[newHostUUID]
-	clientConn, okConn := sv.Clients[newHostUUID]
-	sv.mu.Unlock()
+	sv.mu.RLock()
+	session, exists := sv.Clients[newHostUUID]
+	sv.mu.RUnlock()
 
-	if !okUser || !okConn {
-		log.Printf("[!] No se pudo encontrar al nuevo host %s en memoria para notificar", newHostUUID)
+	if !exists {
+		log.Printf("[DEBUG] Could not find session for new host UUID: %s", newHostUUID)
 		return
 	}
 
-	_, err := fmt.Fprintln(clientConn, "SYSTEM_CMD:PROMOTED_TO_HOST")
+	fmt.Fprintf(session.Conn, "%s:PROMOTED\n", EvHostPromoted)
 
-	if err != nil {
-		log.Printf("[!] Error enviando comando al nuevo host %s: %v", user.Username, err)
-	} else {
-		log.Printf("[+] Mensaje enviado: %s es el nuevo Host", user.Username)
-	}
-
-	msg := fmt.Sprintf("[!] El usuario %s es ahora el Host de la sala.\n", user.Username)
-	sv.broadcast(msg, nil, user.CurrentRoomUUID, sv.UsersInRoom)
+	msg := fmt.Sprintf("%s:[!] User %s has been promoted to Host.", EvSystemInfo, session.Username)
+	sv.Broadcast(msg, nil, session.Room)
+	log.Printf("[DEBUG] Host promotion notification sent to %s", session.Username)
 }

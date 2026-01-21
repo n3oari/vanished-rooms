@@ -10,6 +10,7 @@ func (r *SQLiteRepository) CreateUser(u Users) error {
 	query := `INSERT INTO users (uuid, name, password_hash, public_rsa_key, salt) VALUES (?,?,?,?,?)`
 	_, err := r.db.Exec(query, u.UUID, u.Username, u.PasswordHash, u.PublicRSAKey, u.Salt)
 	if err != nil {
+		log.Printf("[DEBUG DB] Error creating user '%s': %v", u.Username, err)
 		return err
 	}
 
@@ -119,5 +120,3 @@ func (r *SQLiteRepository) SetUserAsOwner(userUUID string, status int) error {
 	_, err := r.db.Exec(query, status, userUUID)
 	return err
 }
-
-// func (r  *SQLiteRepository) KickAllUsersFromRoom(roomUUID string ) error {}
