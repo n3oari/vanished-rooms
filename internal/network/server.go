@@ -32,12 +32,15 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 		SQLiteRepository: repository,
 	}
 
-	listener, err := net.Listen("tcp", ":"+port)
+	listener, err := net.Listen("tcp", "127.0.0.1:"+port)
 	if err != nil {
 		log.Println("[-] Error starting server:", err)
 		return
 	}
+
 	defer listener.Close()
+
+	log.Printf("[+] Vanished Rooms server listening locally on: 127.0.0.1:%s (Protected by Tor)\n", port)
 
 	log.Printf("[+] Vanished Rooms server listening on port: %s...\n", port)
 

@@ -6,6 +6,7 @@ const (
 	EvUserJoined   = "USER_JOINED"
 	EvSystemInfo   = "SYSTEM_INFO"
 	EvHostPromoted = "HOST_PROMOTED"
+	EvBurn         = "BURN_SIGNAL"
 
 	StatusRoomCreated = "created"
 	CmdPromotedHost   = "SYSTEM_CMD:PROMOTED_TO_HOST"
