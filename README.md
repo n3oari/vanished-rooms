@@ -1,9 +1,11 @@
 # VANISHED ROOMS 
 
-![Vanished Rooms Logo](img/logo.png)
-
-
-![Server test](img/sv.png)
+<p align="center">
+  <img src="img/logo.png" alt="Vanished Rooms Logo" width="400">
+  <br>
+   <br>
+  <img src="img/sv.png" alt="Server test" width="600">
+</p>
 
 **Vanished Rooms** is a high-privacy, CLI-based messaging application developed in **Go**. It is designed to provide users with a secure, room-based communication environment where anonymity and data persistence are eliminated by design.
 
