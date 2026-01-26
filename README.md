@@ -1,4 +1,4 @@
-# VANISHED ROOMS 
+# VANISHED ROOMS
 
 <p align="center">
   <img src="img/logo.png" alt="Vanished Rooms Logo" width="400">
@@ -13,16 +13,16 @@
 
 ### Key Features
 
-* **Zero-Knowledge E2EE:** End-to-end encryption ensuring that only the participants can read the messages.
-* **Hybrid Encryption Architecture:**
-    * **Symmetric Encryption (AES):** Used for high-speed message encryption within the room.
-    * **Asymmetric Encryption (RSA):** Utilized to securely distribute the AES session key among participants.
-* **Anti-Forensics & Zero Logs:** No activity logs or metadata are stored at any point.
-* **Anonymity via Tor:** Native routing through the Tor network to mask user IP addresses.
-* **Server Amnesia:** The server is configured to wipe all volatile memory and restart periodically, ensuring total data clearance.
-* **User-Centric Privacy Logic:**
-    * **Instant Purge:** User data is immediately wiped upon disconnection.
-    * **Self-Destructing Rooms:** Rooms are automatically deleted as soon as the last participant leaves.
+- **Zero-Knowledge E2EE:** End-to-end encryption ensuring that only the participants can read the messages.
+- **Hybrid Encryption Architecture:**
+  - **Symmetric Encryption (AES):** Used for high-speed message encryption within the room.
+  - **Asymmetric Encryption (RSA):** Utilized to securely distribute the AES session key among participants.
+- **Anti-Forensics & Zero Logs:** No activity logs or metadata are stored at any point.
+- **Anonymity via Tor:** Native routing through the Tor network to mask user IP addresses.
+- **Server Amnesia:** The server is configured to wipe all volatile memory and restart periodically, ensuring total data clearance.
+- **User-Centric Privacy Logic:**
+  - **Instant Purge:** User data is immediately wiped upon disconnection.
+  - **Self-Destructing Rooms:** Rooms are automatically deleted as soon as the last participant leaves.
 
 ---
 
@@ -41,7 +41,6 @@ The application follows a decentralized **Peer-to-Peer (P2P)** logic for key dis
 ![Logic Sequence Diagram](/img/secuencia.png)
 
 ### Usage
-
 
 ```bash
 
@@ -64,11 +63,7 @@ go run main.go client -u <username> -p <password> -k <path-private-rsa-key>
 /help	None	Display the help menu.
 /quit	None	Disconnect and remove your user permanently.
 
+ Generate RSA: openssl genrsa -out privada.pem 2048"
+
+
 ```
-
-
-
-
-
-
-

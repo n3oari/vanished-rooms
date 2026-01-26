@@ -1,16 +1,16 @@
 package network
 
 import (
-	"bufio"
 	"fmt"
 	"log"
-	"net"
 	"strings"
 	"vanished-rooms/internal/cryptoutils"
 	"vanished-rooms/internal/storage"
+
+	"github.com/gorilla/websocket"
 )
 
-func (sv *Server) HandleConnection(conn net.Conn) {
+func (sv *Server) HandleConnection(ws *websocket.Conn) {
 	UUID := generateUUID()
 	var user storage.Users
 
@@ -39,26 +39,27 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 		}
 
 		sv.SQLiteRepository.DeleteUser(storage.Users{UUID: UUID})
-		conn.Close()
+		ws.Close()
 		log.Printf("[DEBUG] Connection closed for UUID: %s", UUID)
 	}()
 
-	scanner := bufio.NewScanner(conn)
-
-	if !scanner.Scan() {
+	_, msgBytes, err := ws.ReadMessage()
+	if err != nil {
 		return
 	}
-	user.Username = scanner.Text()
+	user.Username = string(msgBytes)
 
-	if !scanner.Scan() {
+	_, msgBytes, err = ws.ReadMessage()
+	if err != nil {
 		return
 	}
-	plainPassword := scanner.Text()
+	plainPassword := string(msgBytes)
 
-	if !scanner.Scan() {
+	_, msgBytes, err = ws.ReadMessage()
+	if err != nil {
 		return
 	}
-	user.PublicRSAKey = scanner.Text()
+	user.PublicRSAKey = string(msgBytes)
 
 	salt, _ := cryptoutils.GenerarSalt()
 	user.PasswordHash = cryptoutils.HashPassword(plainPassword, salt)
@@ -69,7 +70,7 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 
 	sv.mu.Lock()
 	sv.Clients[UUID] = &ClientSession{
-		Conn:      conn,
+		wsConn:    ws,
 		ID:        UUID,
 		Username:  user.Username,
 		PublicKey: user.PublicRSAKey,
@@ -79,8 +80,13 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 
 	log.Printf("[DEBUG] New authenticated user: %s (ID: %s)", user.Username, UUID)
 
-	for scanner.Scan() {
-		msg := strings.TrimSpace(scanner.Text())
+	for {
+		_, messageBytes, err := ws.ReadMessage()
+		if err != nil {
+			break
+		}
+
+		msg := strings.TrimSpace(string(messageBytes))
 		if msg == "" {
 			continue
 		}
@@ -94,19 +100,20 @@ func (sv *Server) HandleConnection(conn net.Conn) {
 		}
 
 		if strings.HasPrefix(msg, "/") {
-			sv.HandleInternalCommand(conn, &user, msg)
+			sv.HandleInternalCommand(ws, &user, msg)
 			continue
 		}
 
 		if session.Room == "" {
-			fmt.Fprintf(conn, "%s:[!] You must join a room first using /join\n", EvSystemInfo)
+			sysMsg := fmt.Sprintf("%s:[!] You must join a room first using /join", EvSystemInfo)
+			ws.WriteMessage(websocket.TextMessage, []byte(sysMsg))
 			continue
 		}
 
-		log.Printf("[DEBUG SERVER] INCOMING JUNK DATA from %s: %s", user.Username, msg)
+		log.Printf("[DEBUG SERVER] INCOMING ENCRYPTED DATA from %s: %s", user.Username, msg)
 
 		roomMsg := fmt.Sprintf("%s:[%s]: %s", EvChatMsg, user.Username, msg)
-		sv.Broadcast(roomMsg, conn, session.Room)
+		sv.Broadcast(roomMsg, ws, session.Room)
 	}
 }
 
@@ -116,13 +123,14 @@ func NotifyPromotion(sv *Server, newHostUUID string) {
 	sv.mu.RUnlock()
 
 	if !exists {
-		log.Printf("[DEBUG] Could not find session for new host UUID: %s", newHostUUID)
 		return
 	}
 
-	fmt.Fprintf(session.Conn, "%s:PROMOTED\n", EvHostPromoted)
+	promotionMsg := fmt.Sprintf("%s:PROMOTED", EvHostPromoted)
+	session.wsConn.WriteMessage(websocket.TextMessage, []byte(promotionMsg))
 
-	msg := fmt.Sprintf("%s:[!] User %s has been promoted to Host.", EvSystemInfo, session.Username)
-	sv.Broadcast(msg, nil, session.Room)
+	sysMsg := fmt.Sprintf("%s:[!] User %s has been promoted to Host.", EvSystemInfo, session.Username)
+	sv.Broadcast(sysMsg, nil, session.Room)
+
 	log.Printf("[DEBUG] Host promotion notification sent to %s", session.Username)
 }
