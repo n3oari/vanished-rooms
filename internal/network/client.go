@@ -11,7 +11,13 @@ import (
 	"strings"
 	"vanished-rooms/internal/cryptoutils"
 	"vanished-rooms/internal/ui"
+
+	"github.com/gorilla/websocket"
+	"golang.org/x/net/proxy"
 )
+
+const ServerOnionAddr = "ws://pxwm5oqmxvjgmfbtkyuu6izdxbov7pjwyyaejhhn7c5o4z2lv2eaxkyd.onion/ws"
+const TorProxyAddr = "127.0.0.1:9050"
 
 type InternalEvent struct {
 	Type    string
@@ -19,30 +25,40 @@ type InternalEvent struct {
 }
 
 type VanishedClient struct {
-	conn       net.Conn
-	reader     *bufio.Reader
+	wsConn     *websocket.Conn
 	aesKey     []byte
 	privateKey *rsa.PrivateKey
 	isHost     bool
 	username   string
 }
 
-func StartClient(addr string, user string, pass string, privateKeyPath string, tor bool, proxy string, privRSA *rsa.PrivateKey) {
+func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 	ui.PrintRandomBanner()
 
 	if privRSA == nil {
 		log.Fatal("[!] Private RSA Key is nil")
 	}
 
-	conn, err := net.Dial("tcp", addr)
+	socksDialer, err := proxy.SOCKS5("tcp", TorProxyAddr, nil, proxy.Direct)
 	if err != nil {
-		log.Fatalf("[!] Connection failed: %v", err)
+		log.Fatalf("[!] Error: No se pudo contactar con Tor en %s. ¿Está el servicio activo?", TorProxyAddr)
+	}
+
+	dialer := websocket.DefaultDialer
+	dialer.NetDial = func(network, addr string) (net.Conn, error) {
+		return socksDialer.Dial(network, addr)
+	}
+
+	fmt.Printf("[i] Estableciendo túnel anónimo hacia: %s\n", ServerOnionAddr)
+
+	conn, _, err := dialer.Dial(ServerOnionAddr, nil)
+	if err != nil {
+		log.Fatalf("[!] Error de conexión al servicio oculto: %v\n[?] Verifica que tu dirección .onion sea correcta y el servidor esté UP.", err)
 	}
 	defer conn.Close()
 
 	client := &VanishedClient{
-		conn:       conn,
-		reader:     bufio.NewReader(conn),
+		wsConn:     conn,
 		privateKey: privRSA,
 		username:   user,
 		isHost:     false,
@@ -50,20 +66,24 @@ func StartClient(addr string, user string, pass string, privateKeyPath string, t
 	}
 
 	pubKeyBytes, _ := cryptoutils.EncodePublicKeyToBase64(privRSA)
-
-	fmt.Fprintln(conn, user)
-	fmt.Fprintln(conn, pass)
-	fmt.Fprintln(conn, pubKeyBytes)
+	client.wsConn.WriteMessage(websocket.TextMessage, []byte(user))
+	client.wsConn.WriteMessage(websocket.TextMessage, []byte(pass))
+	client.wsConn.WriteMessage(websocket.TextMessage, []byte(pubKeyBytes))
 
 	go client.Listen()
 
-	fmt.Printf("[+] Connected to server as %s.\n", user)
+	fmt.Printf("[+] Conexión exitosa. Bienvenido al entorno seguro, %s.\n", user)
 
 	inputScanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("> ")
 	for inputScanner.Scan() {
 		text := strings.TrimSpace(inputScanner.Text())
+		if text == "" {
+			fmt.Print("> ")
+			continue
+		}
 		if text == "/quit" {
+			client.wsConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			return
 		}
 		client.SendMessage(text)
@@ -73,40 +93,41 @@ func StartClient(addr string, user string, pass string, privateKeyPath string, t
 
 func (c *VanishedClient) Listen() {
 	for {
-		line, err := c.reader.ReadString('\n')
+		_, message, err := c.wsConn.ReadMessage()
 		if err != nil {
-			fmt.Println("\n[!] Connection lost.")
+			fmt.Println("\n[!] Conexión perdida con el servicio oculto.")
 			os.Exit(0)
 		}
+		line := string(message)
 		event := c.parseRawLine(line)
 		c.dispatch(event)
 	}
 }
 
 func (c *VanishedClient) SendMessage(text string) {
-	if text == "" {
-		return
-	}
+	var finalMsg string
 	if strings.HasPrefix(text, "/") {
-		fmt.Fprintln(c.conn, text)
+		finalMsg = text
 	} else if len(c.aesKey) > 0 {
 		encrypted, err := cryptoutils.EncryptForChat(text, c.aesKey)
 		if err == nil {
-			fmt.Fprintln(c.conn, encrypted)
+			finalMsg = encrypted
 		} else {
-			fmt.Fprintln(c.conn, text)
+			finalMsg = text
 		}
 	} else {
-		fmt.Fprintln(c.conn, text)
+		finalMsg = text
 	}
+	c.wsConn.WriteMessage(websocket.TextMessage, []byte(finalMsg))
 }
 
 func (c *VanishedClient) parseRawLine(line string) InternalEvent {
 	line = strings.TrimSpace(line)
-	if strings.HasPrefix(line, EvKeyDelivery+":") {
+	const suffix = ":"
+	if strings.HasPrefix(line, EvKeyDelivery+suffix) {
 		return InternalEvent{Type: EvKeyDelivery, Payload: line}
 	}
-	if strings.HasPrefix(line, EvUserJoined+":") {
+	if strings.HasPrefix(line, EvUserJoined+suffix) {
 		return InternalEvent{Type: EvUserJoined, Payload: line}
 	}
 	if strings.Contains(line, StatusRoomCreated) {
@@ -130,7 +151,7 @@ func (c *VanishedClient) dispatch(event InternalEvent) {
 		c.handleSystemInfo(event.Payload)
 	case EvHostPromoted:
 		c.isHost = true
-		fmt.Println("\n[!] SYSTEM: You are now the HOST.")
+		fmt.Println("\n[!] SYSTEM: Has sido promocionado a HOST de la sala.")
 	}
 }
 
@@ -154,26 +175,19 @@ func (c *VanishedClient) processIncomingChat(payload string) {
 func (c *VanishedClient) handleKeyDelivery(line string) {
 	payload := strings.TrimPrefix(line, EvKeyDelivery+":")
 	parts := strings.SplitN(payload, ":", 3)
-
 	if len(parts) < 3 {
 		return
 	}
 
-	subCommand := parts[0]
-	senderName := parts[1]
-	keyData := strings.TrimSpace(parts[2])
+	subCommand, senderName, keyData := parts[0], parts[1], strings.TrimSpace(parts[2])
 
 	if subCommand == "FROM" {
 		fmt.Printf("\n[DEBUG CLIENT] WRAPPED AES RECEIVED FROM %s:\n%s\n", senderName, keyData)
-
 		decryptedKey, err := cryptoutils.DecryoptWithPrivateKey(keyData, c.privateKey)
-		if err != nil {
-			fmt.Printf("\n[!] Key decryption failed: %v\n", err)
-			return
+		if err == nil {
+			c.aesKey = decryptedKey
+			fmt.Printf("\n[+] Llave AES establecida. Cifrado de chat ACTIVADO.\n")
 		}
-
-		c.aesKey = decryptedKey
-		fmt.Printf("\n[+] AES Key established. Encryption ACTIVE.\n")
 	} else if subCommand == "REQ_FROM" {
 		fmt.Printf("\n[DEBUG CLIENT] RSA PUBLIC KEY FROM %s:\n%s\n", senderName, keyData)
 		c.processKeyRequest(senderName, keyData)
@@ -184,16 +198,10 @@ func (c *VanishedClient) handleUserJoined(payload string) {
 	if !c.isHost {
 		return
 	}
-
 	parts := strings.SplitN(payload, ":", 3)
-	if len(parts) < 3 {
-		return
+	if len(parts) >= 3 {
+		c.processKeyRequest(parts[1], strings.TrimSpace(parts[2]))
 	}
-
-	targetUser := parts[1]
-	targetPubKey := strings.TrimSpace(parts[2])
-
-	c.processKeyRequest(targetUser, targetPubKey)
 }
 
 func (c *VanishedClient) handleSystemInfo(payload string) {
@@ -202,25 +210,19 @@ func (c *VanishedClient) handleSystemInfo(payload string) {
 		if err == nil {
 			c.aesKey = newKey
 			c.isHost = true
-			fmt.Printf("\n[!] SYSTEM: AES key generated. You are Host.")
+			fmt.Printf("\n[!] SYSTEM: Llave AES generada. Eres el Host de la sala.")
 		}
 	}
 }
 
 func (c *VanishedClient) processKeyRequest(targetUser string, targetPubKey string) {
 	if len(c.aesKey) == 0 {
-		fmt.Println("\n[!] Error: No AES key to share.")
 		return
 	}
-
 	encryptedBytes, err := cryptoutils.EncryptWithPublicKey(c.aesKey, targetPubKey)
-	if err != nil {
-		fmt.Printf("\n[!] Encryption error: %v\n", err)
-		return
+	if err == nil {
+		encKeyB64 := base64.StdEncoding.EncodeToString(encryptedBytes)
+		fmt.Printf("\n[DEBUG HOST] Enviando llave cifrada a %s (Base64)\n", targetUser)
+		c.wsConn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("/sendKey %s %s", targetUser, encKeyB64)))
 	}
-
-	encKeyB64 := base64.StdEncoding.EncodeToString(encryptedBytes)
-
-	fmt.Fprintf(c.conn, "/sendKey %s %s\n", targetUser, encKeyB64)
-	fmt.Printf("\n[DEBUG HOST] Key sent to %s (Base64 encoded)\n", targetUser)
 }
