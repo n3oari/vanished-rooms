@@ -10,13 +10,14 @@ import (
 	"os"
 	"strings"
 	"vanished-rooms/internal/cryptoutils"
+	"vanished-rooms/internal/logger" // Asegúrate de que la ruta sea correcta
 	"vanished-rooms/internal/ui"
 
 	"github.com/gorilla/websocket"
 	"golang.org/x/net/proxy"
 )
 
-const ServerOnionAddr = "ws://pxwm5oqmxvjgmfbtkyuu6izdxbov7pjwyyaejhhn7c5o4z2lv2eaxkyd.onion/ws"
+const ServerOnionAddr = "ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws"
 const TorProxyAddr = "127.0.0.1:9050"
 
 type InternalEvent struct {
@@ -30,10 +31,12 @@ type VanishedClient struct {
 	privateKey *rsa.PrivateKey
 	isHost     bool
 	username   string
+	l          *logger.CustomLogger
 }
 
 func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 	ui.PrintRandomBanner()
+	l := logger.New()
 
 	if privRSA == nil {
 		log.Fatal("[!] Private RSA Key is nil")
@@ -49,7 +52,7 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		return socksDialer.Dial(network, addr)
 	}
 
-	fmt.Printf("[i] Estableciendo túnel anónimo hacia: %s\n", ServerOnionAddr)
+	l.Log(logger.INFO, "Estableciendo túnel anónimo hacia: "+ServerOnionAddr)
 
 	conn, _, err := dialer.Dial(ServerOnionAddr, nil)
 	if err != nil {
@@ -63,6 +66,7 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		username:   user,
 		isHost:     false,
 		aesKey:     make([]byte, 0),
+		l:          l, // Inyectamos el logger en el cliente
 	}
 
 	pubKeyBytes, _ := cryptoutils.EncodePublicKeyToBase64(privRSA)
@@ -151,7 +155,7 @@ func (c *VanishedClient) dispatch(event InternalEvent) {
 		c.handleSystemInfo(event.Payload)
 	case EvHostPromoted:
 		c.isHost = true
-		fmt.Println("\n[!] SYSTEM: Has sido promocionado a HOST de la sala.")
+		c.l.Log(logger.INFO, "SYSTEM: Has sido promocionado a HOST de la sala.")
 	}
 }
 
@@ -160,6 +164,9 @@ func (c *VanishedClient) processIncomingChat(payload string) {
 		parts := strings.SplitN(payload, ": ", 2)
 		if len(parts) == 2 {
 			username, encryptedData := parts[0], strings.TrimSpace(parts[1])
+
+			c.l.Log(logger.DEBUG, "INCOMING ENCRYPTED DATA from "+username+": "+encryptedData)
+
 			if len(c.aesKey) > 0 {
 				decrypted, err := cryptoutils.DecryptForChat(encryptedData, c.aesKey)
 				if err == nil {
@@ -182,14 +189,15 @@ func (c *VanishedClient) handleKeyDelivery(line string) {
 	subCommand, senderName, keyData := parts[0], parts[1], strings.TrimSpace(parts[2])
 
 	if subCommand == "FROM" {
-		fmt.Printf("\n[DEBUG CLIENT] WRAPPED AES RECEIVED FROM %s:\n%s\n", senderName, keyData)
+		c.l.Log(logger.DEBUG, "WRAPPED AES RECEIVED FROM "+senderName+": "+keyData)
 		decryptedKey, err := cryptoutils.DecryoptWithPrivateKey(keyData, c.privateKey)
 		if err == nil {
 			c.aesKey = decryptedKey
-			fmt.Printf("\n[+] Llave AES establecida. Cifrado de chat ACTIVADO.\n")
+			l := logger.New()
+			l.Log(logger.INFO, "Llave AES establecida. Cifrado de chat ACTIVADO.")
 		}
 	} else if subCommand == "REQ_FROM" {
-		fmt.Printf("\n[DEBUG CLIENT] RSA PUBLIC KEY FROM %s:\n%s\n", senderName, keyData)
+		c.l.Log(logger.DEBUG, "RSA PUBLIC KEY FROM "+senderName+": "+keyData)
 		c.processKeyRequest(senderName, keyData)
 	}
 }
@@ -210,7 +218,7 @@ func (c *VanishedClient) handleSystemInfo(payload string) {
 		if err == nil {
 			c.aesKey = newKey
 			c.isHost = true
-			fmt.Printf("\n[!] SYSTEM: Llave AES generada. Eres el Host de la sala.")
+			c.l.Log(logger.INFO, "SYSTEM: Llave AES generada. Eres el Host de la sala.")
 		}
 	}
 }
@@ -222,7 +230,7 @@ func (c *VanishedClient) processKeyRequest(targetUser string, targetPubKey strin
 	encryptedBytes, err := cryptoutils.EncryptWithPublicKey(c.aesKey, targetPubKey)
 	if err == nil {
 		encKeyB64 := base64.StdEncoding.EncodeToString(encryptedBytes)
-		fmt.Printf("\n[DEBUG HOST] Enviando llave cifrada a %s (Base64)\n", targetUser)
+		c.l.Log(logger.DEBUG, "Enviando llave cifrada a "+targetUser+" (Base64)")
 		c.wsConn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("/sendKey %s %s", targetUser, encKeyB64)))
 	}
 }
