@@ -10,14 +10,19 @@ import (
 	"os"
 	"strings"
 	"vanished-rooms/internal/cryptoutils"
-	"vanished-rooms/internal/logger" // Asegúrate de que la ruta sea correcta
+	"vanished-rooms/internal/logger"
 	"vanished-rooms/internal/ui"
 
 	"github.com/gorilla/websocket"
 	"golang.org/x/net/proxy"
 )
 
-const ServerOnionAddr = "ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws"
+// (DEVELOPTMENT) -> LOCALHOST
+const ServerAddr = "ws://127.0.0.1:8080/ws"
+
+// (PRODUCTION) -> TOR
+//const ServerAddr = "ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws"
+
 const TorProxyAddr = "127.0.0.1:9050"
 
 type InternalEvent struct {
@@ -42,21 +47,31 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		log.Fatal("[!] Private RSA Key is nil")
 	}
 
-	socksDialer, err := proxy.SOCKS5("tcp", TorProxyAddr, nil, proxy.Direct)
-	if err != nil {
-		log.Fatalf("[!] Error: No se pudo contactar con Tor en %s. ¿Está el servicio activo?", TorProxyAddr)
-	}
-
+	// Configuramos el dialer base de Websockets
 	dialer := websocket.DefaultDialer
-	dialer.NetDial = func(network, addr string) (net.Conn, error) {
-		return socksDialer.Dial(network, addr)
+
+	// Lógica de detección: ¿Estamos intentando conectar a un .onion?
+	isOnion := strings.HasSuffix(strings.ToLower(ServerAddr), ".onion/ws")
+
+	if isOnion {
+		l.Log(logger.INFO, "Modo Tor detectado. Configurando túnel SOCKS5...")
+		socksDialer, err := proxy.SOCKS5("tcp", TorProxyAddr, nil, proxy.Direct)
+		if err != nil {
+			log.Fatalf("[!] Error: No se pudo contactar con Tor en %s. ¿Está el servicio activo?", TorProxyAddr)
+		}
+		// Inyectamos el dialer de Tor en el cliente de Websockets
+		dialer.NetDial = func(network, addr string) (net.Conn, error) {
+			return socksDialer.Dial(network, addr)
+		}
+	} else {
+		l.Log(logger.INFO, "Modo Local detectado. Saltando proxy Tor para desarrollo.")
 	}
 
-	l.Log(logger.INFO, "Estableciendo túnel anónimo hacia: "+ServerOnionAddr)
+	l.Log(logger.INFO, "Estableciendo conexión hacia: "+ServerAddr)
 
-	conn, _, err := dialer.Dial(ServerOnionAddr, nil)
+	conn, _, err := dialer.Dial(ServerAddr, nil)
 	if err != nil {
-		log.Fatalf("[!] Error de conexión al servicio oculto: %v\n[?] Verifica que tu dirección .onion sea correcta y el servidor esté UP.", err)
+		log.Fatalf("[!] Error de conexión: %v\n[?] Verifica que el servidor esté encendido en %s", err, ServerAddr)
 	}
 	defer conn.Close()
 
@@ -66,9 +81,10 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		username:   user,
 		isHost:     false,
 		aesKey:     make([]byte, 0),
-		l:          l, // Inyectamos el logger en el cliente
+		l:          l,
 	}
 
+	// Fase 1: Identificación y envío de llave pública RSA
 	pubKeyBytes, _ := cryptoutils.EncodePublicKeyToBase64(privRSA)
 	client.wsConn.WriteMessage(websocket.TextMessage, []byte(user))
 	client.wsConn.WriteMessage(websocket.TextMessage, []byte(pass))
@@ -78,6 +94,7 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 
 	fmt.Printf("[+] Conexión exitosa. Bienvenido al entorno seguro, %s.\n", user)
 
+	// Bucle principal de entrada de texto
 	inputScanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("> ")
 	for inputScanner.Scan() {
@@ -99,7 +116,7 @@ func (c *VanishedClient) Listen() {
 	for {
 		_, message, err := c.wsConn.ReadMessage()
 		if err != nil {
-			fmt.Println("\n[!] Conexión perdida con el servicio oculto.")
+			fmt.Println("\n[!] Conexión perdida con el servidor.")
 			os.Exit(0)
 		}
 		line := string(message)
@@ -110,9 +127,11 @@ func (c *VanishedClient) Listen() {
 
 func (c *VanishedClient) SendMessage(text string) {
 	var finalMsg string
+	// Si es un comando, no se encripta
 	if strings.HasPrefix(text, "/") {
 		finalMsg = text
 	} else if len(c.aesKey) > 0 {
+		// Fase 3: Encriptación Simétrica AES
 		encrypted, err := cryptoutils.EncryptForChat(text, c.aesKey)
 		if err == nil {
 			finalMsg = encrypted
@@ -190,11 +209,11 @@ func (c *VanishedClient) handleKeyDelivery(line string) {
 
 	if subCommand == "FROM" {
 		c.l.Log(logger.DEBUG, "WRAPPED AES RECEIVED FROM "+senderName+": "+keyData)
+		// Desencriptamos la llave AES usando nuestra privada RSA
 		decryptedKey, err := cryptoutils.DecryoptWithPrivateKey(keyData, c.privateKey)
 		if err == nil {
 			c.aesKey = decryptedKey
-			l := logger.New()
-			l.Log(logger.INFO, "Llave AES establecida. Cifrado de chat ACTIVADO.")
+			c.l.Log(logger.INFO, "Llave AES establecida. Cifrado de chat ACTIVADO.")
 		}
 	} else if subCommand == "REQ_FROM" {
 		c.l.Log(logger.DEBUG, "RSA PUBLIC KEY FROM "+senderName+": "+keyData)
