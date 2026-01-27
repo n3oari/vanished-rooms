@@ -1,11 +1,10 @@
 # VANISHED ROOMS
 
 <p align="center">
-  <img src="img/logo.png" alt="Vanished Rooms Logo" width="400">
+  <img src="img/logo.png" alt="Vanished Rooms Logo" width="350" height="auto">
   <br>
-   <br>
-  <img src="img/sv.png" alt="Server test" width="600">
 </p>
+
 
 **Vanished Rooms** is a high-privacy, CLI-based messaging application developed in **Go**. It is designed to provide users with a secure, room-based communication environment where anonymity and data persistence are eliminated by design.
 
@@ -19,7 +18,7 @@
   - **Asymmetric Encryption (RSA):** Utilized to securely distribute the AES session key among participants.
 - **Anti-Forensics & Zero Logs:** No activity logs or metadata are stored at any point.
 - **Anonymity via Tor:** Native routing through the Tor network to mask user IP addresses.
-- **Server Amnesia:** The server is configured to wipe all volatile memory and restart periodically, ensuring total data clearance.
+- **Server Amnesia:** The server is configured to wipe all volatile memory and restart periodically, ensuring total data clearance. [DEV]
 - **User-Centric Privacy Logic:**
   - **Instant Purge:** User data is immediately wiped upon disconnection.
   - **Self-Destructing Rooms:** Rooms are automatically deleted as soon as the last participant leaves.
@@ -42,11 +41,16 @@ The application follows a decentralized **Peer-to-Peer (P2P)** logic for key dis
 
 ### Usage
 
-```bash
+> Verify if the only is the server in .onion is UP
 
-git clone [https://github.com/n3oari/vanished-rooms.git](https://github.com/n3oari/vanished-rooms.git)
+```
+http://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/
+```
+
+```bash
+git clone https://github.com/n3oari/vanished-rooms.git
 go mod tidy
-go run main.go server
+Generate RSA: openssl genrsa -out privada.pem 2048  
 go run main.go client -u <username> -p <password> -k <path-private-rsa-key>
 ```
 
@@ -62,8 +66,9 @@ go run main.go client -u <username> -p <password> -k <path-private-rsa-key>
 /users	None	List all users in your current room.
 /help	None	Display the help menu.
 /quit	None	Disconnect and remove your user permanently.
-
- Generate RSA: openssl genrsa -out privada.pem 2048"
-
-
 ```
+
+<p align="center">
+   <br>
+  <img src="img/sv.png" alt="Server test" width="600">
+</p>
