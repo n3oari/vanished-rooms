@@ -1,7 +1,7 @@
 # VANISHED ROOMS
 
 <p align="center">
-  <img src="img/logo.png" alt="Vanished Rooms Logo" width="350" height="auto">
+  <img src="img/logo-removebg-preview.png" alt="Vanished Rooms Logo" width="350" height="auto">
   <br>
 </p>
 
@@ -92,5 +92,20 @@ go run main.go client -u <username> -p <password> -k <path-private-rsa-key>
 /help	None	Display the help menu.
 /quit	None	Disconnect and remove your user permanently.
 ```
+> Examples
+
+```bash
+# Private: Requires password
+/create -n secret_vault -p 1234 --private
+
+# Public: No password needed
+/create -n global_lobby --public
+
+# Joining 
+/join -n global_lobby  (to public room)
+/join -n secret_vault -p 1234 (to private room)
+
+```
+
 
 
