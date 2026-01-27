@@ -84,7 +84,6 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		l:          l,
 	}
 
-	// Fase 1: Identificación y envío de llave pública RSA
 	pubKeyBytes, _ := cryptoutils.EncodePublicKeyToBase64(privRSA)
 	client.wsConn.WriteMessage(websocket.TextMessage, []byte(user))
 	client.wsConn.WriteMessage(websocket.TextMessage, []byte(pass))
@@ -94,7 +93,6 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 
 	fmt.Printf("[+] Conexión exitosa. Bienvenido al entorno seguro, %s.\n", user)
 
-	// Bucle principal de entrada de texto
 	inputScanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("> ")
 	for inputScanner.Scan() {
@@ -127,11 +125,9 @@ func (c *VanishedClient) Listen() {
 
 func (c *VanishedClient) SendMessage(text string) {
 	var finalMsg string
-	// Si es un comando, no se encripta
 	if strings.HasPrefix(text, "/") {
 		finalMsg = text
 	} else if len(c.aesKey) > 0 {
-		// Fase 3: Encriptación Simétrica AES
 		encrypted, err := cryptoutils.EncryptForChat(text, c.aesKey)
 		if err == nil {
 			finalMsg = encrypted
@@ -209,7 +205,6 @@ func (c *VanishedClient) handleKeyDelivery(line string) {
 
 	if subCommand == "FROM" {
 		c.l.Log(logger.DEBUG, "WRAPPED AES RECEIVED FROM "+senderName+": "+keyData)
-		// Desencriptamos la llave AES usando nuestra privada RSA
 		decryptedKey, err := cryptoutils.DecryoptWithPrivateKey(keyData, c.privateKey)
 		if err == nil {
 			c.aesKey = decryptedKey

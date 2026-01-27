@@ -51,10 +51,12 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 	}
 	defer tx.Rollback()
 
-	var roomUUID, storedHash, salt string
+	var roomUUID string
+	var storedHash, salt []byte
+	var isPrivate bool
 
-	querySelect := `SELECT uuid, password_hash, salt FROM rooms WHERE name = ?`
-	err = tx.QueryRow(querySelect, nameRoom).Scan(&roomUUID, &storedHash, &salt)
+	querySelect := `SELECT uuid, password_hash, salt, private FROM rooms WHERE name = ?`
+	err = tx.QueryRow(querySelect, nameRoom).Scan(&roomUUID, &storedHash, &salt, &isPrivate)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", "", errors.New("room not found")
@@ -62,9 +64,11 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 		return "", "", err
 	}
 
-	inputHash := cryptoutils.HashPassword(passRoom, []byte(salt))
-	if !bytes.Equal(inputHash, []byte(storedHash)) {
-		return "", "", errors.New("invalid credentials")
+	if isPrivate {
+		inputHash := cryptoutils.HashPassword(passRoom, salt)
+		if !bytes.Equal(inputHash, []byte(storedHash)) {
+			return "", "", errors.New("invalid credentials")
+		}
 	}
 
 	var hostUUID string
@@ -166,4 +170,22 @@ func (r *SQLiteRepository) GetRoomCredentials(roomName string) (hash []byte, sal
 		return nil, nil, err
 	}
 	return hash, salt, nil
+}
+
+func (r *SQLiteRepository) ListPublicRooms() ([]string, error) {
+	query := `SELECT name FROM rooms WHERE private = 0`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var rooms []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err == nil {
+			rooms = append(rooms, name)
+		}
+	}
+	return rooms, nil
 }
