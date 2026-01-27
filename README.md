@@ -39,13 +39,27 @@ The application follows a decentralized **Peer-to-Peer (P2P)** logic for key dis
 
 ![Logic Sequence Diagram](/img/secuencia.png)
 
+<br>
+
 ### Usage
 
-> Verify if the only is the server in .onion is UP
+> You will need a tor service running
 
+> Verify if the is the server in .onion is UP
+ 
 ```
 http://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/
 ```
+<br>
+
+<p align="center">
+   <br>
+  <img src="img/onion.png" alt="onion " width="700">
+</p>
+
+<br>
+
+
 
 ```bash
 git clone https://github.com/n3oari/vanished-rooms.git
@@ -68,7 +82,4 @@ go run main.go client -u <username> -p <password> -k <path-private-rsa-key>
 /quit	None	Disconnect and remove your user permanently.
 ```
 
-<p align="center">
-   <br>
-  <img src="img/sv.png" alt="Server test" width="600">
-</p>
+
