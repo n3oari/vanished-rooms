@@ -79,7 +79,10 @@ func (sv *Server) HandleConnection(ws *websocket.Conn) {
 	sv.mu.Unlock()
 
 	log.Printf("[DEBUG] New authenticated user: %s (ID: %s)", user.Username, UUID)
+	welcomeMsg := fmt.Sprintf("%s: Use /rooms to see public rooms. Join without password using /join -n <name>", EvSystemInfo)
+	ws.WriteMessage(websocket.TextMessage, []byte(welcomeMsg))
 
+	//
 	for {
 		_, messageBytes, err := ws.ReadMessage()
 		if err != nil {

@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 	"vanished-rooms/internal/cryptoutils"
+	"vanished-rooms/internal/logger"
 	"vanished-rooms/internal/storage"
 
 	"github.com/gorilla/websocket"
@@ -64,32 +65,42 @@ func extractFlag(msg, flag string) string {
 func (sv *Server) handleCreateCommand(conn *websocket.Conn, user *storage.Users, msg string) {
 	roomName := strings.TrimSpace(extractFlag(msg, "-n"))
 	roomPass := strings.TrimSpace(extractFlag(msg, "-p"))
-	isPrivate := strings.TrimSpace(extractFlag(msg, "--private"))
+	hasPrivate := strings.Contains(msg, "--private")
+	hasPublic := strings.Contains(msg, "--public")
 
-	if roomName == "" || roomPass == "" || isPrivate == "" {
-		usage := fmt.Sprintf("%s:[!] Usage: /create -n <room_name> -p <room_password> --private <y/n>", EvSystemInfo)
+	if (!hasPrivate && !hasPublic) || (hasPrivate && hasPublic) {
+		usage := fmt.Sprintf("%s:[!] Error: Debes especificar la visibilidad usando --private o --public", EvSystemInfo)
 		conn.WriteMessage(websocket.TextMessage, []byte(usage))
 		return
 	}
 
-	privacyChoice := false
-	if isPrivate == "y" {
-		privacyChoice = true
-	} else if isPrivate != "n" {
-		invalidPriv := fmt.Sprintf("%s:[!] Invalid privacy option. Use 'y' or 'n'.", EvSystemInfo)
-		conn.WriteMessage(websocket.TextMessage, []byte(invalidPriv))
+	if roomName == "" {
+		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[!] Error: El nombre de la sala es obligatorio.", EvSystemInfo)))
+		return
+	}
+	if hasPrivate && roomPass == "" {
+		usage := fmt.Sprintf("%s:[!] Error: Las salas privadas requieren contraseña (-p).", EvSystemInfo)
+		conn.WriteMessage(websocket.TextMessage, []byte(usage))
 		return
 	}
 
-	salt, err := cryptoutils.GenerarSalt()
-	if err != nil {
-		saltErr := fmt.Sprintf("%s:[!] Error generating salt: %v", EvSystemInfo, err)
-		conn.WriteMessage(websocket.TextMessage, []byte(saltErr))
-		return
+	var hash, salt []byte
+	var err error
+	privacyChoice := hasPrivate
+
+	if privacyChoice {
+		salt, err = cryptoutils.GenerarSalt()
+		if err != nil {
+			l.Log(logger.ERROR, "Error generando salt: "+err.Error())
+			return
+		}
+		hash = cryptoutils.HashPassword(roomPass, salt)
+	} else {
+		hash = []byte{}
+		salt = []byte{}
 	}
 
-	hash := cryptoutils.HashPassword(roomPass, salt)
-
+	// 6. Construcción del Objeto Room
 	newRoom := storage.Rooms{
 		UUID:         generateUUID(),
 		Name:         roomName,
@@ -97,7 +108,6 @@ func (sv *Server) handleCreateCommand(conn *websocket.Conn, user *storage.Users,
 		Salt:         salt,
 		Private:      privacyChoice,
 	}
-
 	err = sv.SQLiteRepository.CreateAndJoinRoom(newRoom, user.UUID)
 	if err != nil {
 		dbErr := fmt.Sprintf("%s:[!] Database Error: %v", EvSystemInfo, err)
@@ -126,7 +136,7 @@ func (sv *Server) handleJoinCommand(conn *websocket.Conn, User *storage.Users, m
 
 	roomName := extractFlag(msg, "-n")
 	roomPass := extractFlag(msg, "-p")
-	if roomName == "" || roomPass == "" {
+	if roomName == "" {
 		conn.WriteMessage(websocket.TextMessage, []byte("[!] Usage: /join -n <room_name> -p <room_password>"))
 		return
 	}
