@@ -1,0 +1,8 @@
+2026/01/27 19:29:18 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/27 19:29:20 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/27 19:29:20 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/27 19:29:20 [TRAFFIC-ONION] GET /ws
+2026/01/27 19:34:45 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/27 19:34:49 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/27 19:34:49 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/27 19:34:49 [TRAFFIC-ONION] GET /ws

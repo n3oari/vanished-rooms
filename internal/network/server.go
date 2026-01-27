@@ -42,7 +42,7 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 		SQLiteRepository: repository,
 	}
 
-	http.HandleFunc("/ws", requestLogger(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/ws", l.MiddlewareRequest(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			l.Log(logger.ERROR, "WS Upgrade failed: "+err.Error())
@@ -51,7 +51,7 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 		go sv.HandleConnection(conn)
 	}))
 
-	http.HandleFunc("/", requestLogger(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", l.MiddlewareRequest(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFiles("./web/index.html")
 		if err != nil {
 			l.Log(logger.ERROR, "Template missing: ./web/index.html")
@@ -88,11 +88,4 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 
 func generateUUID() string {
 	return uuid.New().String()
-}
-
-func requestLogger(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		l.Log(logger.ONION_INFO, r.Method+" "+r.URL.Path)
-		next(w, r)
-	}
 }

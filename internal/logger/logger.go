@@ -1,7 +1,8 @@
 package logger
 
 import (
-	"log"
+	"fmt"
+	"net/http"
 	"os"
 	"time"
 )
@@ -28,16 +29,22 @@ const (
 )
 
 type CustomLogger struct {
-	logger *log.Logger
+	file *os.File
 }
 
 func New() *CustomLogger {
+	f, err := os.OpenFile("vanished_rooms.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Printf("[!] No se pudo crear el archivo de log: %v. Usando solo consola.\n", err)
+	}
 	return &CustomLogger{
-		logger: log.New(os.Stdout, "", 0),
+		file: f,
 	}
 }
 
 func (l *CustomLogger) Log(level LogLevel, message string) {
+	now := time.Now().Format("2006/01/02 15:04:05")
+
 	var color string
 	switch level {
 	case INFO:
@@ -49,25 +56,52 @@ func (l *CustomLogger) Log(level LogLevel, message string) {
 	case ONION_INFO:
 		color = colorPurple
 	default:
-		color = colorBlue // El azul para DEBUG
+		color = colorBlue
 	}
 
-	now := time.Now().Format("2006/01/02 15:04:05")
-
-	l.logger.Printf("%s%s%s %s[%s]%s %s\n",
+	consoleMsg := fmt.Sprintf("%s%s%s %s[%s]%s %s\n",
 		colorYellow, now, colorReset,
 		color, level, colorReset,
 		message,
 	)
+	fmt.Print(consoleMsg)
+
+	// 2. Log para Archivo (SIN colores)
+	if l.file != nil {
+		fileMsg := fmt.Sprintf("%s [%s] %s\n", now, level, message)
+		l.file.WriteString(fileMsg)
+	}
 }
 
 func (l *CustomLogger) LogRoom(roomName string, user string, message string) {
 	now := time.Now().Format("2006/01/02 15:04:05")
 
-	l.logger.Printf("%s[%s]%s%s[%s]%s %s%s%s: %s\n",
+	// 1. Consola (Colorido)
+	consoleMsg := fmt.Sprintf("%s[%s]%s%s[%s]%s %s%s%s: %s\n",
 		colorYellow, now, colorReset,
 		colorPurple, roomName, colorReset,
 		colorCyan, user, colorReset,
 		message,
 	)
+	fmt.Print(consoleMsg)
+
+	// 2. Archivo (Plano)
+	if l.file != nil {
+		fileMsg := fmt.Sprintf("%s [%s] %s: %s\n", now, roomName, user, message)
+		l.file.WriteString(fileMsg)
+	}
+}
+
+func (l *CustomLogger) Close() {
+	if l.file != nil {
+		l.file.Close()
+	}
+}
+
+func (l *CustomLogger) MiddlewareRequest(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		l.Log(ONION_INFO, fmt.Sprintf("%s %s", r.Method, r.URL.Path))
+
+		next(w, r)
+	}
 }
