@@ -13,15 +13,26 @@
 ### Key Features
 
 - **Zero-Knowledge E2EE:** End-to-end encryption ensuring that only the participants can read the messages.
+  
 - **Hybrid Encryption Architecture:**
   - **Symmetric Encryption (AES):** Used for high-speed message encryption within the room.
   - **Asymmetric Encryption (RSA):** Utilized to securely distribute the AES session key among participants.
+
+- **Highly Encrypted Public Logs:** Transparency-driven storage where all message traffic is publicly accessible but remains strictly encrypted and unreadable to anyone outside the session
+  
 - **Anti-Forensics & Zero Logs:** No activity logs or metadata are stored at any point.
+
 - **Anonymity via Tor:** Native routing through the Tor network to mask user IP addresses.
+  
 - **Server Amnesia:** The server is configured to wipe all volatile memory and restart periodically, ensuring total data clearance. [DEV]
-- **User-Centric Privacy Logic:**
+  
+- **User-Centric Privacy Logic:** 
   - **Instant Purge:** User data is immediately wiped upon disconnection.
   - **Self-Destructing Rooms:** Rooms are automatically deleted as soon as the last participant leaves.
+ 
+    <br>
+ 
+> Transparency Note: The server operates on a "glass box" principle. While the encrypted traffic is publicly visible for audit purposes, the E2EE layer ensures it is mathematically impossible to decrypt without the participants' private keys.
 
 ---
 
