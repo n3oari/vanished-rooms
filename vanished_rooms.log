@@ -143,3 +143,35 @@ SYSTEM_INFO: (No password required for these rooms)
 2026/01/28 09:35:48 [TRAFFIC-ONION] GET /ws
 2026/01/28 09:35:48 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
 2026/01/28 09:35:54 [DEBUG] INCOMING ENCRYPTED DATA from [!] Cannot join room: room user limit exceeded
+2026/01/28 11:02:53 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 11:03:37 [INFO] Shutting down... Purging database.
+2026/01/28 11:03:37 [INFO] Vanished successfully.
+2026/01/28 11:03:40 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 11:04:20 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 11:04:20 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 11:04:20 [TRAFFIC-ONION] GET /ws
+2026/01/28 11:04:20 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 11:04:49 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 11:04:49 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 11:04:49 [TRAFFIC-ONION] GET /ws
+2026/01/28 11:04:49 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 11:05:01 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 11:05:01 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 11:05:01 [TRAFFIC-ONION] GET /ws
+2026/01/28 11:05:01 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 11:07:29 [INFO] Shutting down... Purging database.
+2026/01/28 11:07:29 [INFO] Vanished successfully.
+2026/01/28 11:09:54 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 11:12:09 [INFO] Shutting down... Purging database.
+2026/01/28 11:12:09 [INFO] Vanished successfully.
+2026/01/28 11:12:10 [WARN] You are connection to the wire....
+2026/01/28 11:12:10 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 11:12:24 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 11:12:24 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 11:12:24 [TRAFFIC-ONION] GET /ws
+2026/01/28 11:12:24 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 11:16:58 [WARN] You are connection to the wire....
+2026/01/28 11:16:58 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 11:16:58 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 11:16:58 [TRAFFIC-ONION] GET /ws
+2026/01/28 11:16:58 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
