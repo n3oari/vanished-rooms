@@ -189,3 +189,26 @@ func (r *SQLiteRepository) ListPublicRooms() ([]string, error) {
 	}
 	return rooms, nil
 }
+
+func (r *SQLiteRepository) LimitUsersInRoom(roomUUID string) error {
+	count := 0
+	query := `SELECT COUNT(*) FROM participants WHERE uuid_room = ?`
+	err := r.db.QueryRow(query, roomUUID).Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count > 8 {
+		return errors.New("room user limit exceeded")
+	}
+	return nil
+}
+func (r *SQLiteRepository) GetRoomByName(name string) (string, error) {
+	var uuid string
+	query := `SELECT uuid FROM rooms WHERE name = ?`
+
+	err := r.db.QueryRow(query, name).Scan(&uuid)
+	if err != nil {
+		return "", err
+	}
+	return uuid, nil
+}

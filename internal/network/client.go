@@ -47,10 +47,8 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		log.Fatal("[!] Private RSA Key is nil")
 	}
 
-	// Configuramos el dialer base de Websockets
 	dialer := websocket.DefaultDialer
 
-	// Lógica de detección: ¿Estamos intentando conectar a un .onion?
 	isOnion := strings.HasSuffix(strings.ToLower(ServerAddr), ".onion/ws")
 
 	if isOnion {
@@ -59,7 +57,6 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		if err != nil {
 			log.Fatalf("[!] Error: No se pudo contactar con Tor en %s. ¿Está el servicio activo?", TorProxyAddr)
 		}
-		// Inyectamos el dialer de Tor en el cliente de Websockets
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
 			return socksDialer.Dial(network, addr)
 		}
@@ -101,6 +98,12 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 			fmt.Print("> ")
 			continue
 		}
+
+		if len(text) > 1024 {
+			fmt.Println("[!] El mensaje es demasiado largo. Máximo 1024 caracteres.\n")
+			continue
+		}
+
 		if text == "/quit" {
 			client.wsConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			return
