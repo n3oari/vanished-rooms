@@ -255,14 +255,29 @@ func (sv *Server) handleSendKeyCommand(sender *storage.Users, msg string) {
 
 func (sv *Server) handleHelpCommand(conn *websocket.Conn) {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "%s:[?] Available commands:\n", EvSystemInfo)
-	fmt.Fprintln(&sb, "    /create -n <name> -p <pass> --private/--public")
-	fmt.Fprintln(&sb, "    /rooms         -> List all rooms")
-	fmt.Fprintln(&sb, "    /join -n <name> -p <pass>")
-	fmt.Fprintln(&sb, "    /leave-room    -> Exit room")
-	fmt.Fprintln(&sb, "    /users         -> List users in room")
-	fmt.Fprintln(&sb, "    /help          -> Show menu")
-	fmt.Fprintln(&sb, "    /quit          -> Disconnect")
+
+	sb.WriteString(fmt.Sprintf("%s:\n", EvSystemInfo))
+	sb.WriteString("┌──────────────────────────────────────────────────────────┐\n")
+	sb.WriteString("│              VANISHED ROOMS - COMMAND MENU               │\n")
+	sb.WriteString("├──────────────────────────────────────────────────────────┤\n")
+	sb.WriteString("│ [ ROOM CREATION ]                                        │\n")
+	sb.WriteString("│  /create -n <name> --public                              │\n")
+	sb.WriteString("│      -> Create a room visible to everyone.               │\n")
+	sb.WriteString("│  /create -n <name> -p <pass> --private                   │\n")
+	sb.WriteString("│      -> Secure room (min 8 chars password).              │\n")
+	sb.WriteString("│                                                          │\n")
+	sb.WriteString("│ [ NAVIGATION ]                                           │\n")
+	sb.WriteString("│  /rooms                List all public rooms             │\n")
+	sb.WriteString("│  /join -n <name>       Join public (no -p needed)        │\n")
+	sb.WriteString("│  /join -n <name> -p <p> Join private room                │\n")
+	sb.WriteString("│  /leave-room           Exit current room                 │\n")
+	sb.WriteString("│                                                          │\n")
+	sb.WriteString("│ [ SYSTEM ]                                               │\n")
+	sb.WriteString("│  /users                List participants in room         │\n")
+	sb.WriteString("│  /help                 Show this menu                    │\n")
+	sb.WriteString("│  /quit                 Close connection                  │\n")
+	sb.WriteString("└──────────────────────────────────────────────────────────┘\n")
+
 	conn.WriteMessage(websocket.TextMessage, []byte(sb.String()))
 }
 
