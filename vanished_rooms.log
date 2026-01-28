@@ -76,3 +76,70 @@ SYSTEM_INFO: (No password required for these rooms)
 
     * Tip: You can also use Control + C to quit.
     * Generate RSA: openssl genrsa -out privada.pem 2048
+2026/01/28 08:11:11 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 08:29:02 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 08:29:58 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 08:29:58 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 08:29:58 [TRAFFIC-ONION] GET /ws
+2026/01/28 08:29:58 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 08:30:11 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO:[!] Database Error: constraint failed: UNIQUE constraint failed: rooms.name (2067)
+2026/01/28 08:30:16 [INFO] SYSTEM: Llave AES generada. Eres el Host de la sala.
+2026/01/28 08:30:51 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 08:30:51 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 08:30:51 [TRAFFIC-ONION] GET /ws
+2026/01/28 08:30:51 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 08:30:57 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO:[+] Joined room: n
+2026/01/28 08:33:03 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 08:33:03 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 08:33:03 [TRAFFIC-ONION] GET /ws
+2026/01/28 08:33:03 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 08:33:18 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO:[+] Joined room: n
+2026/01/28 08:34:17 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 08:34:17 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 08:34:17 [TRAFFIC-ONION] GET /ws
+2026/01/28 08:34:17 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 08:34:20 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO:[+] Joined room: n
+2026/01/28 08:35:04 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 08:35:04 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 08:35:04 [TRAFFIC-ONION] GET /ws
+2026/01/28 08:35:04 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 08:35:08 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO:[+] Joined room: n
+2026/01/28 08:46:48 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 08:48:05 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 08:48:05 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 08:48:05 [TRAFFIC-ONION] GET /ws
+2026/01/28 08:48:05 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 09:31:26 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 09:31:30 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 09:31:37 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 09:31:37 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 09:31:37 [TRAFFIC-ONION] GET /ws
+2026/01/28 09:31:37 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 09:32:10 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 09:32:10 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 09:32:10 [TRAFFIC-ONION] GET /ws
+2026/01/28 09:32:10 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 09:32:19 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO:[!] Database Error: constraint failed: UNIQUE constraint failed: rooms.name (2067)
+2026/01/28 09:32:23 [INFO] SYSTEM: Llave AES generada. Eres el Host de la sala.
+2026/01/28 09:32:29 [DEBUG] RSA PUBLIC KEY FROM ddbbbb: LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF0d2poSUprWm55QWtQeWYwbUNGRQpyTXQrWUpxUTRNZkgzVnVRTWd4QkRqK05FUC9OSkNxRTlWTE1mbDJKR1M5YTZoaWh4Q3l0SFRrdS9aOEV1K3RCCkJPazFYNEl0MkZFd1BOOXpPVG03NytyTkxaU2cwWm1TbmRrQnIvSmpnMXE4SHBNcVJMSTduVzloRG5ZUjBTNHYKQlRGSW5pc3MxSW8rNy9NalowWnFGVkxjSkMrSDRCblVzYzN5Sk9RVDFzbTQzTFdqalZCSkJCcUJqRC9FMG1hZwpQMEtLN3NqZUJFNzB0MDNVUU9IdGRYZG5GYzZXYlhuSi9vbkIwOUc5OXhxMlBpcC9GaUIzdHlZOU9Yd1ZPTWV6ClgxV1NLMVNBaDd1VmtSY25BR1U0ZzN1dzdIbHU2dE9zMkxocVNMOHltS1E2dTBCQ3dDSUdqaGRMZUkvbDBjaHAKaVFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==
+2026/01/28 09:32:29 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO:[+] Joined room: nn
+2026/01/28 09:32:29 [DEBUG] Enviando llave cifrada a ddbbbb (Base64)
+2026/01/28 09:32:29 [DEBUG] WRAPPED AES RECEIVED FROM bbbb: HgXqeKRH2pbKKu/6CNxvls50wAY3+HbvZf8jJ0h0SZa4YALLKB/L9OfgpeTLPuCuKGSY4BDsgb4PkgdK1crpDPKsVrj/EZPJ7GHosyZWD1kti78zqsX2hnZx2M5xbpGuXW7U4YNPYzcu2afrTPsk94+e+Rh6FQ8lGbm0y8SrdqRDWskU53VRkv7OHJTXCsNvZgd7ciBjN2L8cm8AobXiQN0g7rE+j25HTALZHug0ifR9j4Ez6uMlgvWFFjYmQ0etGLll+D8T0xLvzsXAhu+khUzocAdRplhFcyPnf87eE3HEaV/36out2GGKP3Ibf9g4UrdKwdoRC8WS08hHMgtZog==
+2026/01/28 09:32:29 [INFO] Llave AES establecida. Cifrado de chat ACTIVADO.
+2026/01/28 09:32:44 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 09:32:44 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 09:32:44 [TRAFFIC-ONION] GET /ws
+2026/01/28 09:32:44 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 09:32:54 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO:[+] Joined room: nn
+2026/01/28 09:32:54 [DEBUG] RSA PUBLIC KEY FROM bsdsdsdbbb: LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF0d2poSUprWm55QWtQeWYwbUNGRQpyTXQrWUpxUTRNZkgzVnVRTWd4QkRqK05FUC9OSkNxRTlWTE1mbDJKR1M5YTZoaWh4Q3l0SFRrdS9aOEV1K3RCCkJPazFYNEl0MkZFd1BOOXpPVG03NytyTkxaU2cwWm1TbmRrQnIvSmpnMXE4SHBNcVJMSTduVzloRG5ZUjBTNHYKQlRGSW5pc3MxSW8rNy9NalowWnFGVkxjSkMrSDRCblVzYzN5Sk9RVDFzbTQzTFdqalZCSkJCcUJqRC9FMG1hZwpQMEtLN3NqZUJFNzB0MDNVUU9IdGRYZG5GYzZXYlhuSi9vbkIwOUc5OXhxMlBpcC9GaUIzdHlZOU9Yd1ZPTWV6ClgxV1NLMVNBaDd1VmtSY25BR1U0ZzN1dzdIbHU2dE9zMkxocVNMOHltS1E2dTBCQ3dDSUdqaGRMZUkvbDBjaHAKaVFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==
+2026/01/28 09:32:54 [DEBUG] Enviando llave cifrada a bsdsdsdbbb (Base64)
+2026/01/28 09:32:54 [DEBUG] WRAPPED AES RECEIVED FROM bbbb: nWi+drEyPqAP1pxufhE9vQlVWVdc1QQI6QXE8fJP5PeCr302Ffs4zFiUahGWU4H5jLUlmZ9UydNt7VAMvdV+9LIVfztWyh5uct+RbTYYZsG/ffg7Fw1BoEr8Gz/QGx4q9b/VqsEYEOyBhhztxFJbcG/PhjoJALmOKEKg/ZD5OXjKexqg+zr8/lPJqe8Yk7Duz2dfB5cNUWQ3D2oNV5OojFVa+kPixA+F+p/22937Zg6MyFaFAbyk0FSPbyYifU24ErZxqArCMAkZbNTFfIlS5EwubzTfID/gvHYQQ5gHkGQvfwdRuqiBC19qX0dNJrvL08Fg0hHXJhKeCWNydd4YOg==
+2026/01/28 09:32:54 [INFO] Llave AES establecida. Cifrado de chat ACTIVADO.
+2026/01/28 09:33:18 [INFO] SYSTEM: Has sido promocionado a HOST de la sala.
+2026/01/28 09:33:19 [INFO] SYSTEM: Has sido promocionado a HOST de la sala.
+2026/01/28 09:34:28 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 09:35:48 [INFO] Modo Local detectado. Saltando proxy Tor para desarrollo.
+2026/01/28 09:35:48 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
+2026/01/28 09:35:48 [TRAFFIC-ONION] GET /ws
+2026/01/28 09:35:48 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 09:35:54 [DEBUG] INCOMING ENCRYPTED DATA from [!] Cannot join room: room user limit exceeded

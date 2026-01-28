@@ -66,7 +66,6 @@ func (l *CustomLogger) Log(level LogLevel, message string) {
 	)
 	fmt.Print(consoleMsg)
 
-	// 2. Log para Archivo (SIN colores)
 	if l.file != nil {
 		fileMsg := fmt.Sprintf("%s [%s] %s\n", now, level, message)
 		l.file.WriteString(fileMsg)
@@ -76,7 +75,6 @@ func (l *CustomLogger) Log(level LogLevel, message string) {
 func (l *CustomLogger) LogRoom(roomName string, user string, message string) {
 	now := time.Now().Format("2006/01/02 15:04:05")
 
-	// 1. Consola (Colorido)
 	consoleMsg := fmt.Sprintf("%s[%s]%s%s[%s]%s %s%s%s: %s\n",
 		colorYellow, now, colorReset,
 		colorPurple, roomName, colorReset,
@@ -85,7 +83,6 @@ func (l *CustomLogger) LogRoom(roomName string, user string, message string) {
 	)
 	fmt.Print(consoleMsg)
 
-	// 2. Archivo (Plano)
 	if l.file != nil {
 		fileMsg := fmt.Sprintf("%s [%s] %s: %s\n", now, roomName, user, message)
 		l.file.WriteString(fileMsg)

@@ -100,7 +100,6 @@ func (sv *Server) handleCreateCommand(conn *websocket.Conn, user *storage.Users,
 		salt = []byte{}
 	}
 
-	// 6. Construcción del Objeto Room
 	newRoom := storage.Rooms{
 		UUID:         generateUUID(),
 		Name:         roomName,
@@ -138,6 +137,18 @@ func (sv *Server) handleJoinCommand(conn *websocket.Conn, User *storage.Users, m
 	roomPass := extractFlag(msg, "-p")
 	if roomName == "" {
 		conn.WriteMessage(websocket.TextMessage, []byte("[!] Usage: /join -n <room_name> -p <room_password>"))
+		return
+	}
+	roomUUID, err := sv.SQLiteRepository.GetRoomByName(roomName)
+	if err != nil {
+		conn.WriteMessage(websocket.TextMessage, []byte("[!] Room not found."))
+		return
+	}
+
+	err = sv.SQLiteRepository.LimitUsersInRoom(roomUUID)
+	if err != nil {
+		errorMessage := fmt.Sprintf("[!] Cannot join room: %v", err)
+		conn.WriteMessage(websocket.TextMessage, []byte(errorMessage))
 		return
 	}
 
