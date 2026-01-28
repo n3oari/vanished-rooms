@@ -48,7 +48,7 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 	}
 
 	dialer := websocket.DefaultDialer
-
+	l.Log(logger.WARN, "You are connection to the wire....")
 	isOnion := strings.HasSuffix(strings.ToLower(ServerAddr), ".onion/ws")
 
 	if isOnion {

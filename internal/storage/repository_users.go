@@ -25,6 +25,12 @@ func (r *SQLiteRepository) DeleteUser(u Users) error {
 	return err
 }
 
+func (r *SQLiteRepository) DeleteAllUsers() error {
+	query := `DELETE FROM users`
+	_, err := r.db.Exec(query)
+	return err
+}
+
 func (r *SQLiteRepository) GetPubKeyByUsername(userTarget string) (string, error) {
 	pubKey := ""
 	query := `SELECT public_rsa_key FROM users where name = ?`

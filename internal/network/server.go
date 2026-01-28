@@ -3,7 +3,10 @@ package network
 import (
 	"html/template"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"vanished-rooms/internal/logger"
 	"vanished-rooms/internal/storage"
 	"vanished-rooms/internal/ui"
@@ -36,6 +39,9 @@ var upgrader = websocket.Upgrader{
 
 func StartServer(port string, repository *storage.SQLiteRepository) {
 	ui.PrintRandomBanner()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	sv := &Server{
 		Clients:          make(map[string]*ClientSession),
@@ -78,14 +84,25 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 	fs := http.FileServer(http.Dir("./web/static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	l.Log(logger.INFO, "Vanished Rooms listening on port: "+port+" (Tor Mode)")
+	go func() {
+		l.Log(logger.WARN, "You are connection to the wire....")
+		l.Log(logger.INFO, "Vanished Rooms listening on port: "+port+" (Tor Mode)")
+		err := http.ListenAndServe(":"+port, nil)
+		if err != nil && err != http.ErrServerClosed {
+			l.Log(logger.ERROR, "Fatal Server Error: "+err.Error())
+		}
+	}()
 
-	err := http.ListenAndServe(":"+port, nil)
+	<-stop
+	l.Log(logger.INFO, "Shutting down... Purging database.")
+	err := sv.SQLiteRepository.DeleteAllUsers()
 	if err != nil {
-		l.Log(logger.ERROR, "Fatal Server Error: "+err.Error())
+		l.Log(logger.ERROR, "Failed to purge users: "+err.Error())
 	}
-}
 
+	l.Log(logger.INFO, "Vanished successfully.")
+
+}
 func generateUUID() string {
 	return uuid.New().String()
 }
