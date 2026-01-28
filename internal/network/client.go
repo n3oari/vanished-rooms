@@ -17,7 +17,7 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-// (DEVELOPTMENT) -> LOCALHOST
+// (DEVELOPMENT) -> LOCALHOST
 const ServerAddr = "ws://127.0.0.1:8080/ws"
 
 // (PRODUCTION) -> TOR
@@ -48,27 +48,27 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 	}
 
 	dialer := websocket.DefaultDialer
-	l.Log(logger.WARN, "You are connection to the wire....")
+	l.Log(logger.WARN, "Connecting to the wire...")
 	isOnion := strings.HasSuffix(strings.ToLower(ServerAddr), ".onion/ws")
 
 	if isOnion {
-		l.Log(logger.INFO, "Modo Tor detectado. Configurando túnel SOCKS5...")
+		l.Log(logger.INFO, "Tor mode detected. Configuring SOCKS5 tunnel...")
 		socksDialer, err := proxy.SOCKS5("tcp", TorProxyAddr, nil, proxy.Direct)
 		if err != nil {
-			log.Fatalf("[!] Error: No se pudo contactar con Tor en %s. ¿Está el servicio activo?", TorProxyAddr)
+			log.Fatalf("[!] Error: Could not connect to Tor at %s. Is the service running?", TorProxyAddr)
 		}
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
 			return socksDialer.Dial(network, addr)
 		}
 	} else {
-		l.Log(logger.INFO, "Modo Local detectado. Saltando proxy Tor para desarrollo.")
+		l.Log(logger.INFO, "Local mode detected. Bypassing Tor proxy for development.")
 	}
 
-	l.Log(logger.INFO, "Estableciendo conexión hacia: "+ServerAddr)
+	l.Log(logger.INFO, "Establishing connection to: "+ServerAddr)
 
 	conn, _, err := dialer.Dial(ServerAddr, nil)
 	if err != nil {
-		log.Fatalf("[!] Error de conexión: %v\n[?] Verifica que el servidor esté encendido en %s", err, ServerAddr)
+		log.Fatalf("[!] Connection error: %v\n[?] Ensure the server is online at %s", err, ServerAddr)
 	}
 	defer conn.Close()
 
@@ -81,6 +81,13 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		l:          l,
 	}
 
+	if len(pass) < 8 {
+		fmt.Println("\r[!] Security Error: Password too short.")
+		fmt.Println("[i] For your safety, passwords must be at least 8 characters long.")
+		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Insecure password"))
+		os.Exit(1)
+	}
+
 	pubKeyBytes, _ := cryptoutils.EncodePublicKeyToBase64(privRSA)
 	client.wsConn.WriteMessage(websocket.TextMessage, []byte(user))
 	client.wsConn.WriteMessage(websocket.TextMessage, []byte(pass))
@@ -88,7 +95,7 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 
 	go client.Listen()
 
-	fmt.Printf("[+] Conexión exitosa. Bienvenido al entorno seguro, %s.\n", user)
+	fmt.Printf("[+] Connection successful. Welcome to the secure environment, %s.\n", user)
 
 	inputScanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("> ")
@@ -100,7 +107,7 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		}
 
 		if len(text) > 1024 {
-			fmt.Println("[!] El mensaje es demasiado largo. Máximo 1024 caracteres.\n")
+			l.Log(logger.WARN, "Message too long. Maximum 1024 characters.")
 			continue
 		}
 
@@ -117,7 +124,7 @@ func (c *VanishedClient) Listen() {
 	for {
 		_, message, err := c.wsConn.ReadMessage()
 		if err != nil {
-			fmt.Println("\n[!] Conexión perdida con el servidor.")
+			fmt.Println("\n[!] Connection lost with server.")
 			os.Exit(0)
 		}
 		line := string(message)
@@ -173,7 +180,7 @@ func (c *VanishedClient) dispatch(event InternalEvent) {
 		c.handleSystemInfo(event.Payload)
 	case EvHostPromoted:
 		c.isHost = true
-		c.l.Log(logger.INFO, "SYSTEM: Has sido promocionado a HOST de la sala.")
+		c.l.Log(logger.INFO, "SYSTEM: You have been promoted to room HOST.")
 	}
 }
 
@@ -182,8 +189,6 @@ func (c *VanishedClient) processIncomingChat(payload string) {
 		parts := strings.SplitN(payload, ": ", 2)
 		if len(parts) == 2 {
 			username, encryptedData := parts[0], strings.TrimSpace(parts[1])
-
-			c.l.Log(logger.DEBUG, "INCOMING ENCRYPTED DATA from "+username+": "+encryptedData)
 
 			if len(c.aesKey) > 0 {
 				decrypted, err := cryptoutils.DecryptForChat(encryptedData, c.aesKey)
@@ -204,18 +209,16 @@ func (c *VanishedClient) handleKeyDelivery(line string) {
 		return
 	}
 
-	subCommand, senderName, keyData := parts[0], parts[1], strings.TrimSpace(parts[2])
+	subCommand, _, keyData := parts[0], parts[1], strings.TrimSpace(parts[2])
 
 	if subCommand == "FROM" {
-		c.l.Log(logger.DEBUG, "WRAPPED AES RECEIVED FROM "+senderName+": "+keyData)
 		decryptedKey, err := cryptoutils.DecryoptWithPrivateKey(keyData, c.privateKey)
 		if err == nil {
 			c.aesKey = decryptedKey
-			c.l.Log(logger.INFO, "Llave AES establecida. Cifrado de chat ACTIVADO.")
+			c.l.Log(logger.INFO, "AES Key established. Chat encryption ENABLED.")
 		}
 	} else if subCommand == "REQ_FROM" {
-		c.l.Log(logger.DEBUG, "RSA PUBLIC KEY FROM "+senderName+": "+keyData)
-		c.processKeyRequest(senderName, keyData)
+		c.processKeyRequest(parts[1], keyData)
 	}
 }
 
@@ -235,7 +238,7 @@ func (c *VanishedClient) handleSystemInfo(payload string) {
 		if err == nil {
 			c.aesKey = newKey
 			c.isHost = true
-			c.l.Log(logger.INFO, "SYSTEM: Llave AES generada. Eres el Host de la sala.")
+			c.l.Log(logger.INFO, "SYSTEM: AES Key generated. You are the room Host.")
 		}
 	}
 }
@@ -247,7 +250,6 @@ func (c *VanishedClient) processKeyRequest(targetUser string, targetPubKey strin
 	encryptedBytes, err := cryptoutils.EncryptWithPublicKey(c.aesKey, targetPubKey)
 	if err == nil {
 		encKeyB64 := base64.StdEncoding.EncodeToString(encryptedBytes)
-		c.l.Log(logger.DEBUG, "Enviando llave cifrada a "+targetUser+" (Base64)")
 		c.wsConn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("/sendKey %s %s", targetUser, encKeyB64)))
 	}
 }

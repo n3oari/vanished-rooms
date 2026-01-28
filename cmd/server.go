@@ -26,6 +26,14 @@ var serverCmd = &cobra.Command{
 		}
 		defer db.Close()
 
+		if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
+			log.Fatalf("[-] Failed to set WAL mode: %v", err)
+		}
+		// Activa las claves foráneas para que los DELETE funcionen correctamente
+		if _, err := db.Exec("PRAGMA foreign_keys=ON;"); err != nil {
+			log.Fatalf("[-] Failed to enable Foreign Keys: %v", err)
+		}
+
 		repository := storage.NewSQLHandler(db)
 
 		network.StartServer(port, repository)

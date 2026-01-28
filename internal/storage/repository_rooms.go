@@ -4,43 +4,37 @@ import (
 	"bytes"
 	"database/sql"
 	"errors"
-	"fmt"
-	"log"
 	"strings"
 	"vanished-rooms/internal/cryptoutils"
 )
 
 func (r *SQLiteRepository) CreateAndJoinRoom(room Rooms, userUUID string) error {
-
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
-	_, err = tx.Exec(`INSERT INTO rooms (uuid, name, password_hash, salt,private) VALUES (?,?,?,?,?)`,
+	_, err = tx.Exec(`INSERT INTO rooms (uuid, name, password_hash, salt, private) VALUES (?,?,?,?,?)`,
 		room.UUID, room.Name, room.PasswordHash, room.Salt, room.Private)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	_, err = tx.Exec(`INSERT INTO participants (uuid_room, uuid_user) VALUES (?,?)`,
 		room.UUID, userUUID)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	_, err = tx.Exec(`
-	UPDATE users SET 
-	is_owner = 1, uuid_current_room = ?, joined_at = CURRENT_TIMESTAMP  WHERE uuid = ?`,
+		UPDATE users SET 
+		is_owner = 1, uuid_current_room = ?, joined_at = CURRENT_TIMESTAMP WHERE uuid = ?`,
 		room.UUID, userUUID)
-
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
-	log.Println("[+] Transaction done! Room created and user joined successfully")
+
 	return tx.Commit()
 }
 
@@ -111,20 +105,18 @@ func (r *SQLiteRepository) LeaveRoomAndDeleteRoomIfEmpty(userUUID, roomUUID stri
 	if err != nil {
 		return err
 	}
-
-	count := 0
+	var count int
 	err = tx.QueryRow(`SELECT COUNT(*) FROM participants WHERE uuid_room = ?`, roomUUID).Scan(&count)
 	if err != nil {
 		return err
 	}
+
 	if count == 0 {
 		_, err = tx.Exec(`DELETE FROM rooms WHERE uuid = ?`, roomUUID)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("[-] Room %s deleted for being empty\n", roomUUID)
 	}
-
 	return tx.Commit()
 }
 
@@ -211,4 +203,19 @@ func (r *SQLiteRepository) GetRoomByName(name string) (string, error) {
 		return "", err
 	}
 	return uuid, nil
+}
+
+func (r *SQLiteRepository) PurgeEverything() error {
+	_, err := r.db.Exec(`DELETE FROM participants`)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(`DELETE FROM rooms`)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(`DELETE FROM users`)
+	return err
 }
