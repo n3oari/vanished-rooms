@@ -18,12 +18,12 @@ import (
 )
 
 // (DEVELOPMENT) -> LOCALHOST
-const ServerAddr = "ws://127.0.0.1:8080/ws"
+//const ServerAddr = "ws://127.0.0.1:8080/ws"
 
 // (PRODUCTION) -> TOR
-//const ServerAddr = "ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws"
+const ServerAddr = "ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws"
 
-const TorProxyAddr = "127.0.0.1:9050"
+const TorProxyAddr = "127.0.0.1:9150"
 
 type InternalEvent struct {
 	Type    string

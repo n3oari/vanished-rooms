@@ -5,3 +5,4 @@ resources/
 internal/storage/schema.go
 web/
 vanished-rooms.log
+*.db
