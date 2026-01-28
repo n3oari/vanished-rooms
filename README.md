@@ -10,7 +10,7 @@
 
 ---
 
-### Key Features
+### 🛡️Key Features
 
 - **Zero-Knowledge E2EE:** End-to-end encryption ensuring that only the participants can read the messages.
   
@@ -18,9 +18,9 @@
   - **Symmetric Encryption (AES):** Used for high-speed message encryption within the room.
   - **Asymmetric Encryption (RSA):** Utilized to securely distribute the AES session key among participants.
 
-- **Highly Encrypted Public Logs:** Transparency-driven storage where all message traffic is publicly accessible but remains strictly encrypted and unreadable to anyone outside the session
+- **Highly Encrypted Public Messages Logs:** Transparency-driven storage where all message traffic is publicly accessible but remains strictly encrypted and unreadable to anyone outside the session
   
-- **Anti-Forensics & Zero Logs:** No activity logs or metadata are stored at any point.
+- **Anti-Forensics & Zero Logs:** No activity logs or metadata.
 
 - **Anonymity via Tor:** Native routing through the Tor network to mask user IP addresses.
   
@@ -56,7 +56,7 @@ The application follows a decentralized **Peer-to-Peer (P2P)** logic for key dis
 
 > You will need a tor service running
 
-> Verify if the is the server in .onion is UP
+> ❗Verify if the is the server in .onion is UP
  
 ```
 http://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/
@@ -81,7 +81,7 @@ go run main.go client -u <username> -p <password> -k <path-private-rsa-key>
 
 > You can also use the Makefile
 
-### Help menu (connected)
+### ❓Help menu (connected)
 
 ```bash
 /create	-n <name> -p <pass> --private <y/n>	Create a new room and join automatically.
@@ -95,10 +95,10 @@ go run main.go client -u <username> -p <password> -k <path-private-rsa-key>
 > Examples
 
 ```bash
-# Private: Requires password
+# Private room: Requires password
 /create -n secret_vault -p 1234 --private
 
-# Public: No password needed
+# Public room: No password needed
 /create -n global_lobby --public
 
 # Joining 
@@ -107,5 +107,24 @@ go run main.go client -u <username> -p <password> -k <path-private-rsa-key>
 
 ```
 
+🧪 Debug Mode (dev branch)
+Switch to the dev branch to inspect the system’s inner workings. Integrated debuggers allow you to monitor:
+
+    Key Exchanges: View the handshake and security negotiation.
+
+    Encrypted Messaging: Inspect payloads before and after encryption.
+
+    Under-the-hood Logs: Track real-time data flow and protocol logic.
+
+    Quick Start: 
+    git checkout dev
+    go run . server
+    
+    connects to multiple clients and tests the functionalities
+    
+
+🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
 
 
