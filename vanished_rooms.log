@@ -175,3 +175,331 @@ SYSTEM_INFO: (No password required for these rooms)
 2026/01/28 11:16:58 [INFO] Estableciendo conexión hacia: ws://127.0.0.1:8080/ws
 2026/01/28 11:16:58 [TRAFFIC-ONION] GET /ws
 2026/01/28 11:16:58 [DEBUG] INCOMING ENCRYPTED DATA from SYSTEM_INFO: Use /rooms to see public rooms. Join without password using /join -n <name>
+2026/01/28 16:57:44 [WARN] Connecting to the wire...
+2026/01/28 16:57:44 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 16:57:47 [WARN] Connecting to the wire...
+2026/01/28 16:57:47 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 16:57:47 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 16:57:47 [TRAFFIC-ONION] GET /ws
+2026/01/28 16:58:21 [INFO] SYSTEM: AES Key generated. You are the room Host.
+2026/01/28 16:58:24 [WARN] Connecting to the wire...
+2026/01/28 16:58:24 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 16:58:24 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 16:58:24 [TRAFFIC-ONION] GET /ws
+2026/01/28 16:58:33 [INFO] AES Key established. Chat encryption ENABLED.
+2026/01/28 17:00:30 [INFO] SYSTEM: You have been promoted to room HOST.
+2026/01/28 17:00:31 [INFO] Shutting down... Purging database.
+2026/01/28 17:00:31 [INFO] Vanished successfully.
+2026/01/28 17:00:42 [WARN] Connecting to the wire...
+2026/01/28 17:00:42 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:00:42 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:00:45 [WARN] Connecting to the wire...
+2026/01/28 17:00:45 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:00:48 [WARN] Connecting to the wire...
+2026/01/28 17:00:48 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:00:48 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:00:48 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:00:48 [INFO] New authenticated session: user1
+2026/01/28 17:00:51 [WARN] Connecting to the wire...
+2026/01/28 17:00:51 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:00:51 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:00:51 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:00:51 [INFO] New authenticated session: user1
+2026/01/28 17:01:01 [INFO] Connection closed and UUID purged: c9aee6ce-fc3d-4be0-9bd6-3d79a1331e25
+2026/01/28 17:01:03 [WARN] Connecting to the wire...
+2026/01/28 17:01:03 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:01:03 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:01:03 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:01:03 [INFO] New authenticated session: user2
+2026/01/28 17:01:13 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.password_hash (1299)
+2026/01/28 17:01:28 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.password_hash (1299)
+2026/01/28 17:01:43 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.password_hash (1299)
+2026/01/28 17:02:05 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.password_hash (1299)
+2026/01/28 17:02:25 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.password_hash (1299)
+2026/01/28 17:04:01 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.salt (1299)
+2026/01/28 17:04:12 [INFO] Room created: n by user2
+2026/01/28 17:04:12 [INFO] SYSTEM: AES Key generated. You are the room Host.
+2026/01/28 17:04:18 [INFO] User user1 joined room n
+2026/01/28 17:04:18 [TRAFFIC-ONION] RELAYING AES KEY: [user2] -> [user1]
+2026/01/28 17:04:18 [INFO] AES Key established. Chat encryption ENABLED.
+2026/01/28 17:04:20 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: j9E5NCD/1UG/4ixdCl847K14GJuaorHEy2DDT3E8Pqs=
+2026/01/28 17:04:25 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: gwvBsjFUgd5j0wh7AR9jqxfIUJ0v0WFeLPQSADz6/ojn
+2026/01/28 17:04:34 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: bZ52kh203EP0aINXzaP1czAuDCYIcZUt4CfxjZY=
+2026/01/28 17:04:35 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: bGc80Db/7Ttn6a4Ty39fXE2G9HmdmZMcjeMhdKs=
+2026/01/28 17:04:35 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: o2V+c0dBsRd+SYoY0/l3K6v5CDp2tsMLEJi0oAs=
+2026/01/28 17:04:35 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: a0Ba03AKXkPT66SZ4iMQkLD0tcb4gcGTsFx6I3k=
+2026/01/28 17:04:36 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: KFqeKBghFxsr6Mx12bSfnNbe7AobQeoszqV8Y9Y=
+2026/01/28 17:04:36 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: oWZa2wLN1/mDUIapwt+TG0D5ShnMgkRQi1A5Ylw=
+2026/01/28 17:04:36 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: W9TksvDWuNvOnzH35rcns/wJsBAnZG4QjBRMMUM=
+2026/01/28 17:04:36 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: Difk749iX9MFS/tZB0SReWBkmnw6crxZ/FsuY0c=
+2026/01/28 17:04:36 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: hjGw8PiH076w3T/8sXLnCwJl6K7kXlUzzPdKsJc=
+2026/01/28 17:04:36 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: xIdqUXn+JXJMPzDrskKCFqCAQt34ym0fjVv/rgg=
+2026/01/28 17:04:37 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: zOFkGB7t1HhDlMqKSW4HoVfNB9dQlxyaGh48XfA=
+2026/01/28 17:04:37 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: W8bTq0QWvk27KQ7KZVXfmKj0aZnoOzxJmp9tyq0=
+2026/01/28 17:04:37 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: aDV5iH6DYewnp1rl/VEu7rlgAnmdyZRGUzB4ESo=
+2026/01/28 17:04:37 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: lUIf/z8FCnpExDMyd/G1GXRFQYN4Lq+zd0T77j4=
+2026/01/28 17:04:37 [TRAFFIC-ONION] ENCRYPTED TRAFFIC from user1: 3xFV463eqPGzK8EGsznFSv1uM2DjIfRLyVP16Hw=
+2026/01/28 17:05:50 [INFO] Shutting down... Purging database.
+2026/01/28 17:05:50 [INFO] Vanished successfully.
+2026/01/28 17:05:55 [WARN] Connecting to the wire...
+2026/01/28 17:05:55 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:05:57 [WARN] Connecting to the wire...
+2026/01/28 17:05:57 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:05:57 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:05:57 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:05:57 [INFO] New authenticated session: user1
+2026/01/28 17:06:06 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.salt (1299)
+2026/01/28 17:06:21 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.salt (1299)
+2026/01/28 17:10:52 [INFO] Shutting down... Purging database.
+2026/01/28 17:10:52 [INFO] Vanished successfully.
+2026/01/28 17:10:57 [WARN] Connecting to the wire...
+2026/01/28 17:10:57 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:11:00 [WARN] Connecting to the wire...
+2026/01/28 17:11:00 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:11:00 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:11:00 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:11:00 [INFO] New authenticated session: user1
+2026/01/28 17:11:06 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.salt (1299)
+2026/01/28 17:11:21 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.salt (1299)
+2026/01/28 17:11:28 [ERROR] Database error on room creation: constraint failed: NOT NULL constraint failed: rooms.salt (1299)
+2026/01/28 17:13:31 [INFO] Shutting down... Purging database.
+2026/01/28 17:13:31 [INFO] Vanished successfully.
+2026/01/28 17:13:34 [WARN] Connecting to the wire...
+2026/01/28 17:13:34 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:13:38 [WARN] Connecting to the wire...
+2026/01/28 17:13:38 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:13:38 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:13:38 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:13:38 [INFO] New authenticated session: user1
+2026/01/28 17:13:43 [INFO] Room created: n by user1
+2026/01/28 17:13:43 [INFO] SYSTEM: AES Key generated. You are the room Host.
+2026/01/28 17:13:48 [DEBUG] CHAT PAYLOAD from user1: xhLGK+jJ14ij9/oF+TzwgRQ9BwfqNGL+ON1bJiDt8lE=
+2026/01/28 17:14:04 [WARN] Connecting to the wire...
+2026/01/28 17:14:04 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:14:04 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:14:04 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:14:05 [INFO] New authenticated session: user2
+2026/01/28 17:14:07 [INFO] User user2 joined room n
+2026/01/28 17:14:07 [TRAFFIC-ONION] RELAYING AES KEY: [user1] -> [user2]
+2026/01/28 17:14:07 [INFO] AES Key established. Chat encryption ENABLED.
+2026/01/28 17:14:09 [DEBUG] CHAT PAYLOAD from user2: D7RIsgulHoEakLXiSFvHRF0Hqn5tO2aoDeh33NC02cQ=
+2026/01/28 17:15:01 [INFO] User user1 exiting. Cleaning up room resources...
+2026/01/28 17:15:01 [INFO] New host assigned for room 2ab03a18-35a4-4a5f-9408-5e49a24cb42f: 6d2c6593-e191-4d31-b6c0-97c507476628
+2026/01/28 17:15:01 [INFO] Host promotion notification sent to: user2
+2026/01/28 17:15:01 [INFO] SYSTEM: You have been promoted to room HOST.
+2026/01/28 17:15:01 [INFO] Connection closed and UUID purged: 018506de-0b4c-46c3-970e-d0369caacaa7
+2026/01/28 17:15:04 [INFO] Shutting down... Purging database.
+2026/01/28 17:15:04 [INFO] Vanished successfully.
+2026/01/28 17:15:13 [WARN] Connecting to the wire...
+2026/01/28 17:15:13 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:15:26 [WARN] Connecting to the wire...
+2026/01/28 17:15:26 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:15:26 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:15:26 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:15:26 [INFO] New authenticated session: user1
+2026/01/28 17:15:30 [WARN] Connecting to the wire...
+2026/01/28 17:15:30 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:15:30 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:15:30 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:15:30 [INFO] New authenticated session: user1
+2026/01/28 17:17:08 [INFO] Connection closed and UUID purged: 6f364a70-b2d2-4110-a338-24bdbb37263b
+2026/01/28 17:17:10 [WARN] Connecting to the wire...
+2026/01/28 17:17:10 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:17:10 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:17:10 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:17:10 [INFO] New authenticated session: user1
+2026/01/28 17:17:22 [INFO] Shutting down... Purging database.
+2026/01/28 17:17:22 [INFO] Vanished successfully.
+2026/01/28 17:17:25 [WARN] Connecting to the wire...
+2026/01/28 17:17:25 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:17:28 [WARN] Connecting to the wire...
+2026/01/28 17:17:28 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:17:28 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:17:28 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:17:28 [INFO] New authenticated session: user1
+2026/01/28 17:17:34 [WARN] Connecting to the wire...
+2026/01/28 17:17:34 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:17:34 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:17:34 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:17:34 [INFO] New authenticated session: user1
+2026/01/28 17:19:15 [INFO] Shutting down... Purging database.
+2026/01/28 17:19:15 [INFO] Vanished successfully.
+2026/01/28 17:19:17 [WARN] Connecting to the wire...
+2026/01/28 17:19:17 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:19:19 [WARN] Connecting to the wire...
+2026/01/28 17:19:19 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:19:19 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:19:19 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:19:19 [INFO] New authenticated session: user1
+2026/01/28 17:19:22 [WARN] Connecting to the wire...
+2026/01/28 17:19:22 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:19:22 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:19:22 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:19:22 [ERROR] Failed to create user in DB: constraint failed: UNIQUE constraint failed: users.name (2067)
+2026/01/28 17:24:02 [INFO] Connection closed and UUID purged: 20015596-ac3b-49e3-a148-3c1652f140e5
+2026/01/28 17:24:04 [WARN] Connecting to the wire...
+2026/01/28 17:24:04 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:24:04 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:24:04 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:24:04 [INFO] New authenticated session: user1
+2026/01/28 17:24:28 [WARN] Connecting to the wire...
+2026/01/28 17:24:28 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:24:28 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:24:28 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:24:28 [ERROR] Failed to create user in DB: constraint failed: UNIQUE constraint failed: users.name (2067)
+2026/01/28 17:24:30 [WARN] Connecting to the wire...
+2026/01/28 17:24:30 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:24:30 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:24:30 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:24:30 [INFO] New authenticated session: user2
+2026/01/28 17:24:37 [INFO] Shutting down... Purging database.
+2026/01/28 17:24:37 [INFO] Vanished successfully.
+2026/01/28 17:24:38 [WARN] Connecting to the wire...
+2026/01/28 17:24:38 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:24:41 [WARN] Connecting to the wire...
+2026/01/28 17:24:41 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:24:41 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:24:41 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:24:41 [INFO] New authenticated session: user1
+2026/01/28 17:24:55 [ERROR] Database error on room creation: constraint failed: UNIQUE constraint failed: rooms.name (2067)
+2026/01/28 17:25:04 [INFO] Room created: sdfsd by user1
+2026/01/28 17:25:04 [INFO] SYSTEM: AES Key generated. You are the room Host.
+2026/01/28 17:25:08 [WARN] Connecting to the wire...
+2026/01/28 17:25:08 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:25:08 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:25:08 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:25:08 [INFO] New authenticated session: user3
+2026/01/28 17:28:37 [INFO] Shutting down... Purging database.
+2026/01/28 17:28:37 [INFO] Vanished successfully.
+2026/01/28 17:28:42 [WARN] Connecting to the wire...
+2026/01/28 17:28:42 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:28:45 [WARN] Connecting to the wire...
+2026/01/28 17:28:45 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:28:45 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:28:45 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:28:45 [INFO] New authenticated session: user1
+2026/01/28 17:28:56 [INFO] Room created: sdfgfg by user1
+2026/01/28 17:28:56 [INFO] SYSTEM: AES Key generated. You are the room Host.
+2026/01/28 17:28:59 [WARN] Connecting to the wire...
+2026/01/28 17:28:59 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:28:59 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:28:59 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:28:59 [INFO] New authenticated session: user2
+2026/01/28 17:29:49 [WARN] Connecting to the wire...
+2026/01/28 17:29:49 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:29:49 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:29:49 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:29:49 [ERROR] Failed to create user in DB: constraint failed: UNIQUE constraint failed: users.name (2067)
+2026/01/28 17:29:52 [WARN] Connecting to the wire...
+2026/01/28 17:29:52 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:29:52 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:29:52 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:29:52 [ERROR] Failed to create user in DB: constraint failed: UNIQUE constraint failed: users.name (2067)
+2026/01/28 17:29:54 [WARN] Connecting to the wire...
+2026/01/28 17:29:54 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:29:54 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:29:54 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:29:54 [INFO] New authenticated session: user3
+2026/01/28 17:30:04 [INFO] Shutting down... Purging database.
+2026/01/28 17:30:04 [INFO] Vanished successfully.
+2026/01/28 17:30:10 [WARN] Connecting to the wire...
+2026/01/28 17:30:10 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:30:12 [WARN] Connecting to the wire...
+2026/01/28 17:30:12 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:30:12 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:30:12 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:30:12 [INFO] New authenticated session: user1
+2026/01/28 17:30:19 [INFO] Room created: n by user1
+2026/01/28 17:30:19 [INFO] SYSTEM: AES Key generated. You are the room Host.
+2026/01/28 17:30:21 [WARN] Connecting to the wire...
+2026/01/28 17:30:21 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:30:21 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:30:21 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:30:22 [INFO] New authenticated session: user2
+2026/01/28 17:30:43 [INFO] Shutting down... Purging database.
+2026/01/28 17:30:43 [INFO] Vanished successfully.
+2026/01/28 17:30:48 [WARN] Connecting to the wire...
+2026/01/28 17:30:48 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:30:50 [WARN] Connecting to the wire...
+2026/01/28 17:30:50 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:30:50 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:30:50 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:30:50 [INFO] New authenticated session: user1
+2026/01/28 17:32:16 [INFO] Connection closed and UUID purged: 70cb84c7-7e2f-4dd0-a25d-658c7cfa1600
+2026/01/28 17:42:13 [INFO] Shutting down... Purging database.
+2026/01/28 17:42:13 [INFO] Vanished successfully.
+2026/01/28 17:42:15 [WARN] Connecting to the wire...
+2026/01/28 17:42:15 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:42:16 [INFO] Shutting down... Purging database.
+2026/01/28 17:42:16 [INFO] Vanished successfully.
+2026/01/28 17:42:20 [WARN] Connecting to the wire...
+2026/01/28 17:42:20 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:42:23 [WARN] Connecting to the wire...
+2026/01/28 17:42:23 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:42:23 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:42:23 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:42:23 [INFO] New authenticated session: user1
+2026/01/28 17:42:32 [INFO] Room created: n by user1
+2026/01/28 17:42:32 [INFO] SYSTEM: AES Key generated. You are the room Host.
+2026/01/28 17:42:39 [INFO] Shutting down... Purging database.
+2026/01/28 17:42:39 [INFO] Vanished successfully.
+2026/01/28 17:44:42 [WARN] Connecting to the wire...
+2026/01/28 17:44:42 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:44:42 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:44:51 [WARN] Connecting to the wire...
+2026/01/28 17:44:51 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:44:56 [WARN] Connecting to the wire...
+2026/01/28 17:44:56 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:44:56 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:44:56 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:44:56 [INFO] New authenticated session: user1
+2026/01/28 17:45:02 [INFO] Room created: n by user1
+2026/01/28 17:45:02 [INFO] SYSTEM: AES Key generated. You are the room Host.
+2026/01/28 17:45:17 [INFO] User user1 exiting. Cleaning up room resources...
+2026/01/28 17:45:17 [INFO] Connection closed and UUID purged: 0fa7f84e-7dc2-4714-84e1-484636358136
+2026/01/28 17:45:26 [WARN] Connecting to the wire...
+2026/01/28 17:45:26 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:45:26 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:45:26 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:45:26 [INFO] New authenticated session: user1
+2026/01/28 17:45:31 [INFO] Room created: n by user1
+2026/01/28 17:45:31 [INFO] SYSTEM: AES Key generated. You are the room Host.
+2026/01/28 17:45:34 [INFO] Shutting down... Purging database.
+2026/01/28 17:45:34 [INFO] Vanished successfully.
+2026/01/28 17:49:09 [WARN] Connecting to the wire...
+2026/01/28 17:49:09 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:49:56 [INFO] Shutting down... Purging database.
+2026/01/28 17:49:56 [INFO] Vanished successfully.
+2026/01/28 17:50:45 [WARN] System boot: Purging existing ephemeral data...
+2026/01/28 17:50:45 [INFO] Database is clean. Ready for new connections.
+2026/01/28 17:50:45 [WARN] Connecting to the wire...
+2026/01/28 17:50:45 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 17:50:52 [WARN] Connecting to the wire...
+2026/01/28 17:50:52 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 17:50:52 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 17:50:52 [TRAFFIC-ONION] GET /ws
+2026/01/28 17:50:52 [INFO] New authenticated session: user1
+2026/01/28 17:50:58 [INFO] Room created: n by user1
+2026/01/28 17:50:58 [INFO] SYSTEM: AES Key generated. You are the room Host.
+2026/01/28 17:51:03 [INFO] Shutting down... Purging database.
+2026/01/28 17:51:03 [INFO] Vanished successfully.
+2026/01/28 18:00:59 [WARN] System boot: Purging existing ephemeral data...
+2026/01/28 18:00:59 [INFO] Database is clean. Ready for new connections.
+2026/01/28 18:00:59 [WARN] Connecting to the wire...
+2026/01/28 18:00:59 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/01/28 18:01:00 [WARN] Connecting to the wire...
+2026/01/28 18:01:00 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 18:01:00 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 18:01:00 [TRAFFIC-ONION] GET /ws
+2026/01/28 18:01:01 [INFO] New authenticated session: user1
+2026/01/28 18:01:55 [INFO] Connection closed and UUID purged: a5c5a62d-6d35-4fab-ae78-eb60410582b4
+2026/01/28 18:02:13 [WARN] Connecting to the wire...
+2026/01/28 18:02:13 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 18:02:13 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 18:02:13 [TRAFFIC-ONION] GET /ws
+2026/01/28 18:02:13 [INFO] New authenticated session: sddd
+2026/01/28 18:02:27 [INFO] Connection closed and UUID purged: badeda2c-4b49-437a-bf1f-f7987534e8ad
+2026/01/28 18:02:29 [WARN] Connecting to the wire...
+2026/01/28 18:02:29 [INFO] Local mode detected. Bypassing Tor proxy for development.
+2026/01/28 18:02:29 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/01/28 18:02:29 [TRAFFIC-ONION] GET /ws

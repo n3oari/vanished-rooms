@@ -2,7 +2,6 @@ package network
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"vanished-rooms/internal/cryptoutils"
 	"vanished-rooms/internal/logger"
@@ -22,36 +21,26 @@ func (sv *Server) HandleInternalCommand(conn *websocket.Conn, user *storage.User
 	switch cmd {
 	case "/create":
 		sv.handleCreateCommand(conn, user, msg)
-
 	case "/join":
 		sv.handleJoinCommand(conn, user, msg)
-
 	case "/users":
 		sv.handleUsersCommand(conn, user)
-
 	case "/rooms":
 		sv.handleRoomsCommand(conn)
-
 	case "/leave-room":
 		sv.handleLeaveRoomCommand(conn, user)
-
 	case "/help":
 		sv.handleHelpCommand(conn)
-
 	case "/quit":
 		sv.handleQuitCommand(conn)
-
 	case "/sendKey":
 		sv.handleSendKeyCommand(user, msg)
-
 	default:
 		errMsg := fmt.Sprintf("%s:[!] Unknown command. Type /help", EvSystemInfo)
 		conn.WriteMessage(websocket.TextMessage, []byte(errMsg))
 	}
 }
 
-// idx+1 < len(parts) is for security: ensures the flag isn't the last word
-// and prevents an "index out of range" panic.
 func extractFlag(msg, flag string) string {
 	parts := strings.Fields(msg)
 	for idx, part := range parts {
@@ -69,18 +58,13 @@ func (sv *Server) handleCreateCommand(conn *websocket.Conn, user *storage.Users,
 	hasPublic := strings.Contains(msg, "--public")
 
 	if (!hasPrivate && !hasPublic) || (hasPrivate && hasPublic) {
-		usage := fmt.Sprintf("%s:[!] Error: Debes especificar la visibilidad usando --private o --public", EvSystemInfo)
+		usage := fmt.Sprintf("%s:[!] Error: Use --private or --public", EvSystemInfo)
 		conn.WriteMessage(websocket.TextMessage, []byte(usage))
 		return
 	}
 
 	if roomName == "" {
-		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[!] Error: El nombre de la sala es obligatorio.", EvSystemInfo)))
-		return
-	}
-	if hasPrivate && roomPass == "" {
-		usage := fmt.Sprintf("%s:[!] Error: Las salas privadas requieren contraseña (-p).", EvSystemInfo)
-		conn.WriteMessage(websocket.TextMessage, []byte(usage))
+		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[!] Error: Room name is required.", EvSystemInfo)))
 		return
 	}
 
@@ -89,15 +73,22 @@ func (sv *Server) handleCreateCommand(conn *websocket.Conn, user *storage.Users,
 	privacyChoice := hasPrivate
 
 	if privacyChoice {
+		if roomPass == "" {
+			conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[!] Error: Private rooms require a password (-p).", EvSystemInfo)))
+			return
+		}
+
+		if len(roomPass) < 8 {
+			conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[!] Error: Password too short (min 8 chars).", EvSystemInfo)))
+			return
+		}
+
 		salt, err = cryptoutils.GenerarSalt()
 		if err != nil {
-			l.Log(logger.ERROR, "Error generando salt: "+err.Error())
+			l.Log(logger.ERROR, "Salt generation failed: "+err.Error())
 			return
 		}
 		hash = cryptoutils.HashPassword(roomPass, salt)
-	} else {
-		hash = []byte{}
-		salt = []byte{}
 	}
 
 	newRoom := storage.Rooms{
@@ -107,10 +98,11 @@ func (sv *Server) handleCreateCommand(conn *websocket.Conn, user *storage.Users,
 		Salt:         salt,
 		Private:      privacyChoice,
 	}
+
 	err = sv.SQLiteRepository.CreateAndJoinRoom(newRoom, user.UUID)
 	if err != nil {
-		dbErr := fmt.Sprintf("%s:[!] Database Error: %v", EvSystemInfo, err)
-		conn.WriteMessage(websocket.TextMessage, []byte(dbErr))
+		l.Log(logger.ERROR, "Database error on room creation: "+err.Error())
+		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[!] Database Error.", EvSystemInfo)))
 		return
 	}
 
@@ -118,49 +110,43 @@ func (sv *Server) handleCreateCommand(conn *websocket.Conn, user *storage.Users,
 	user.IsOwner = true
 
 	sv.mu.Lock()
-	sv.Clients[user.UUID] = &ClientSession{
-		wsConn:    conn,
-		ID:        user.UUID,
-		Username:  user.Username,
-		PublicKey: user.PublicRSAKey,
-		Room:      newRoom.UUID,
+	if session, exists := sv.Clients[user.UUID]; exists {
+		session.Room = newRoom.UUID
 	}
 	sv.mu.Unlock()
 
-	success := fmt.Sprintf("%s:[+] Room '%s' created. You are the host (AES generator).", EvSystemInfo, roomName)
+	l.Log(logger.INFO, fmt.Sprintf("Room created: %s by %s", roomName, user.Username))
+	success := fmt.Sprintf("%s:[+] Room '%s' created. You are the host.", EvSystemInfo, roomName)
 	conn.WriteMessage(websocket.TextMessage, []byte(success))
 }
 
 func (sv *Server) handleJoinCommand(conn *websocket.Conn, User *storage.Users, msg string) {
-
 	roomName := extractFlag(msg, "-n")
 	roomPass := extractFlag(msg, "-p")
+
 	if roomName == "" {
-		conn.WriteMessage(websocket.TextMessage, []byte("[!] Usage: /join -n <room_name> -p <room_password>"))
+		conn.WriteMessage(websocket.TextMessage, []byte("[!] Usage: /join -n <name> -p <pass>"))
 		return
 	}
+
 	roomUUID, err := sv.SQLiteRepository.GetRoomByName(roomName)
 	if err != nil {
 		conn.WriteMessage(websocket.TextMessage, []byte("[!] Room not found."))
 		return
 	}
 
-	err = sv.SQLiteRepository.LimitUsersInRoom(roomUUID)
-	if err != nil {
-		errorMessage := fmt.Sprintf("[!] Cannot join room: %v", err)
-		conn.WriteMessage(websocket.TextMessage, []byte(errorMessage))
+	if err := sv.SQLiteRepository.LimitUsersInRoom(roomUUID); err != nil {
+		conn.WriteMessage(websocket.TextMessage, []byte("[!] Room is full."))
 		return
 	}
 
 	roomID, hostID, err := sv.SQLiteRepository.JoinRoom(User.UUID, roomName, roomPass)
 	if err != nil {
-		failMsg := fmt.Sprintf("[!] Failed to join room: %v", err)
-		conn.WriteMessage(websocket.TextMessage, []byte(failMsg))
+		conn.WriteMessage(websocket.TextMessage, []byte("[!] Access denied: Invalid password or room error."))
 		return
 	}
 
 	User.CurrentRoomUUID = roomID
-
 	sv.mu.Lock()
 	sv.Clients[User.UUID] = &ClientSession{
 		wsConn:    conn,
@@ -170,36 +156,25 @@ func (sv *Server) handleJoinCommand(conn *websocket.Conn, User *storage.Users, m
 		Room:      roomID,
 	}
 	hostSession, hostExists := sv.Clients[hostID]
-
 	sv.mu.Unlock()
+
 	if hostExists && hostID != User.UUID {
-		// Formato: KEY_DELIVERY:REQ_FROM:Username:PubKey
 		deliveryReq := fmt.Sprintf("%s:REQ_FROM:%s:%s", EvKeyDelivery, User.Username, User.PublicRSAKey)
 		hostSession.wsConn.WriteMessage(websocket.TextMessage, []byte(deliveryReq))
 	}
 
-	joinNotify := fmt.Sprintf("%s:%s has joined the room", EvUserJoined, User.Username)
-	sv.Broadcast(joinNotify, conn, roomID)
-
-	successJoin := fmt.Sprintf("%s:[+] Joined room: %s", EvSystemInfo, roomName)
-	conn.WriteMessage(websocket.TextMessage, []byte(successJoin))
-
+	sv.Broadcast(fmt.Sprintf("%s:%s has joined the room", EvUserJoined, User.Username), conn, roomID)
+	l.Log(logger.INFO, fmt.Sprintf("User %s joined room %s", User.Username, roomName))
+	conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[+] Joined room: %s", EvSystemInfo, roomName)))
 }
 
 func (sv *Server) handleUsersCommand(conn *websocket.Conn, user *storage.Users) {
 	if user.CurrentRoomUUID == "" {
-		noRoom := fmt.Sprintf("%s:[!] You need to be in a room. Use /join", EvSystemInfo)
-		conn.WriteMessage(websocket.TextMessage, []byte(noRoom))
+		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[!] You are not in a room.", EvSystemInfo)))
 		return
 	}
 
-	users, err := sv.SQLiteRepository.ListAllUsersInRoom(user.CurrentRoomUUID)
-	if err != nil {
-		errRet := fmt.Sprintf("%s:[!] Error retrieving user list", EvSystemInfo)
-		conn.WriteMessage(websocket.TextMessage, []byte(errRet))
-		return
-	}
-
+	users, _ := sv.SQLiteRepository.ListAllUsersInRoom(user.CurrentRoomUUID)
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("%s:\n=== USER LIST ===\n", EvSystemInfo))
 	for _, u := range users {
@@ -210,80 +185,58 @@ func (sv *Server) handleUsersCommand(conn *websocket.Conn, user *storage.Users) 
 }
 
 func (sv *Server) handleRoomsCommand(conn *websocket.Conn) {
-	rooms, err := sv.SQLiteRepository.ListAllRooms()
-	if err != nil {
-		log.Printf("Error al listar salas: %v", err)
-		errRooms := fmt.Sprintf("%s:[!] Error al recuperar las salas", EvSystemInfo)
-		conn.WriteMessage(websocket.TextMessage, []byte(errRooms))
-		return
-	}
-
+	rooms, _ := sv.SQLiteRepository.ListAllRooms()
 	if len(rooms) == 0 {
-		noRooms := fmt.Sprintf("%s:[i] No hay salas disponibles.", EvSystemInfo)
-		conn.WriteMessage(websocket.TextMessage, []byte(noRooms))
+		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[i] No public rooms available.", EvSystemInfo)))
 		return
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%s:\n=== LISTA DE SALAS ===\n", EvSystemInfo))
+	sb.WriteString(fmt.Sprintf("%s:\n=== ROOM LIST ===\n", EvSystemInfo))
 	for _, room := range rooms {
 		fmt.Fprintf(&sb, " • %s\n", room.Name)
 	}
 	sb.WriteString("======================")
+
 	conn.WriteMessage(websocket.TextMessage, []byte(sb.String()))
 }
 
 func (sv *Server) handleLeaveRoomCommand(conn *websocket.Conn, user *storage.Users) {
 	if user.CurrentRoomUUID == "" {
-		notInRoom := fmt.Sprintf("%s:[!] You are not in any room.", EvSystemInfo)
-		conn.WriteMessage(websocket.TextMessage, []byte(notInRoom))
 		return
 	}
 
 	roomID := user.CurrentRoomUUID
-	wasOwner := user.IsOwner
-
-	if wasOwner {
-		newHostUUID, err := sv.SQLiteRepository.PromoteNextHost(roomID, user.UUID)
-		if err == nil && newHostUUID != "" {
-			NotifyPromotion(sv, newHostUUID)
+	if user.IsOwner {
+		newHost, err := sv.SQLiteRepository.PromoteNextHost(roomID, user.UUID)
+		if err == nil && newHost != "" {
+			NotifyPromotion(sv, newHost)
 		}
 	}
 
-	err := sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(user.UUID, roomID)
-	if err != nil {
-		log.Printf("[!] Error leaving the room: %v", err)
-		errLeave := fmt.Sprintf("%s:[!] Error leaving the room", EvSystemInfo)
-		conn.WriteMessage(websocket.TextMessage, []byte(errLeave))
-		return
-	}
+	sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(user.UUID, roomID)
+	l.Log(logger.INFO, fmt.Sprintf("User %s left room %s", user.Username, roomID))
 
 	user.CurrentRoomUUID = ""
 	user.IsOwner = false
-
 	sv.mu.Lock()
 	if session, exists := sv.Clients[user.UUID]; exists {
 		session.Room = ""
 	}
 	sv.mu.Unlock()
 
-	successLeave := fmt.Sprintf("%s:[+] You left the room successfully", EvSystemInfo)
-	conn.WriteMessage(websocket.TextMessage, []byte(successLeave))
+	conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[+] Left room successfully.", EvSystemInfo)))
 }
 
 func (sv *Server) handleSendKeyCommand(sender *storage.Users, msg string) {
 	parts := strings.SplitN(msg, " ", 3)
 	if len(parts) < 3 {
-		log.Printf("[DEBUG SERVER] Invalid /sendKey format from %s", sender.Username)
 		return
 	}
 
-	targetName := parts[1]
-	encryptedKey := parts[2]
-
+	targetName, encryptedKey := parts[1], parts[2]
 	var targetSession *ClientSession
 
-	// Thread-safe search for the recipient's connection
 	sv.mu.RLock()
 	for _, session := range sv.Clients {
 		if session.Username == targetName {
@@ -296,31 +249,24 @@ func (sv *Server) handleSendKeyCommand(sender *storage.Users, msg string) {
 	if targetSession != nil {
 		deliveryMsg := fmt.Sprintf("%s:FROM:%s:%s", EvKeyDelivery, sender.Username, encryptedKey)
 		targetSession.wsConn.WriteMessage(websocket.TextMessage, []byte(deliveryMsg))
-
-		log.Printf("[DEBUG SERVER] RELAYING AES KEY: [%s] -> [%s]", sender.Username, targetName)
-	} else {
-		log.Printf("[DEBUG SERVER] Failed to relay key: Target user '%s' not found or offline", targetName)
+		l.Log(logger.ONION_INFO, fmt.Sprintf("RELAYING AES KEY: [%s] -> [%s]", sender.Username, targetName))
 	}
 }
 
 func (sv *Server) handleHelpCommand(conn *websocket.Conn) {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "%s:[?] Available commands:\n", EvSystemInfo)
-	fmt.Fprintln(&sb, "    /create -n <name> -p <pass> --private <y/n> -> Create a new room and join")
-	fmt.Fprintln(&sb, "    /rooms                        -> List all rooms")
-	fmt.Fprintln(&sb, "    /join -n <name> -p <pass>    -> Join a room")
-	fmt.Fprintln(&sb, "    /leave-room                  -> Leave the room")
-	fmt.Fprintln(&sb, "    /users                        -> List all users (you need to be in a room)")
-	fmt.Fprintln(&sb, "    /help                        -> Show help menu")
-	fmt.Fprintln(&sb, "    /quit                        -> Disconnect and remove user permanently")
-	fmt.Fprintln(&sb, "\n    * Tip: You can also use Control + C to quit.")
-	fmt.Fprintln(&sb, "    * Generate RSA: openssl genrsa -out privada.pem 2048")
-
+	fmt.Fprintln(&sb, "    /create -n <name> -p <pass> --private/--public")
+	fmt.Fprintln(&sb, "    /rooms         -> List all rooms")
+	fmt.Fprintln(&sb, "    /join -n <name> -p <pass>")
+	fmt.Fprintln(&sb, "    /leave-room    -> Exit room")
+	fmt.Fprintln(&sb, "    /users         -> List users in room")
+	fmt.Fprintln(&sb, "    /help          -> Show menu")
+	fmt.Fprintln(&sb, "    /quit          -> Disconnect")
 	conn.WriteMessage(websocket.TextMessage, []byte(sb.String()))
 }
 
 func (sv *Server) handleQuitCommand(conn *websocket.Conn) {
-	bye := fmt.Sprintf("%s:BYE", EvSystemInfo)
-	conn.WriteMessage(websocket.TextMessage, []byte(bye))
+	conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:BYE", EvSystemInfo)))
 	conn.Close()
 }

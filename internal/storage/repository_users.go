@@ -13,9 +13,6 @@ func (r *SQLiteRepository) CreateUser(u Users) error {
 		log.Printf("[DEBUG DB] Error creating user '%s': %v", u.Username, err)
 		return err
 	}
-
-	log.Printf("[!] Error en CreateUser: %v", err)
-
 	return nil
 }
 
@@ -106,7 +103,7 @@ func (r *SQLiteRepository) PromoteNextHost(roomUUID, leavingUserUUID string) (st
 	_, err = tx.Exec(`UPDATE users SET is_owner = 0 WHERE uuid = ?`, leavingUserUUID)
 	if err != nil {
 		tx.Rollback()
-		return "", nil
+		return "", err
 	}
 
 	_, err = tx.Exec(`UPDATE users SET is_owner = 1 WHERE uuid = ?`, nextUserUUID)

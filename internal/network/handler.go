@@ -2,9 +2,10 @@ package network
 
 import (
 	"fmt"
-	"log"
 	"strings"
+	"time"
 	"vanished-rooms/internal/cryptoutils"
+	"vanished-rooms/internal/logger"
 	"vanished-rooms/internal/storage"
 
 	"github.com/gorilla/websocket"
@@ -17,8 +18,11 @@ func (sv *Server) HandleConnection(ws *websocket.Conn) {
 	defer func() {
 		sv.mu.Lock()
 		session, exists := sv.Clients[UUID]
+
 		if !exists {
 			sv.mu.Unlock()
+			sv.SQLiteRepository.DeleteUser(storage.Users{UUID: UUID})
+			ws.Close()
 			return
 		}
 
@@ -29,10 +33,10 @@ func (sv *Server) HandleConnection(ws *websocket.Conn) {
 		sv.mu.Unlock()
 
 		if roomID != "" {
-			log.Printf("[DEBUG] User %s exiting. Cleaning up room...", userName)
+			l.Log(logger.INFO, fmt.Sprintf("User %s exiting. Cleaning up room resources...", userName))
 			newHost, err := sv.SQLiteRepository.PromoteNextHost(roomID, UUID)
 			if err == nil && newHost != "" {
-				log.Printf("[DEBUG] New host found for room %s: %s", roomID, newHost)
+				l.Log(logger.INFO, fmt.Sprintf("New host assigned for room %s: %s", roomID, newHost))
 				NotifyPromotion(sv, newHost)
 			}
 			sv.SQLiteRepository.LeaveRoomAndDeleteRoomIfEmpty(UUID, roomID)
@@ -40,7 +44,7 @@ func (sv *Server) HandleConnection(ws *websocket.Conn) {
 
 		sv.SQLiteRepository.DeleteUser(storage.Users{UUID: UUID})
 		ws.Close()
-		log.Printf("[DEBUG] Connection closed for UUID: %s", UUID)
+		l.Log(logger.INFO, "Connection closed and UUID purged: "+UUID)
 	}()
 
 	_, msgBytes, err := ws.ReadMessage()
@@ -66,7 +70,15 @@ func (sv *Server) HandleConnection(ws *websocket.Conn) {
 	user.Salt = salt
 	user.UUID = UUID
 
-	sv.SQLiteRepository.CreateUser(user)
+	err = sv.SQLiteRepository.CreateUser(user)
+	if err != nil {
+		l.Log(logger.ERROR, "Failed to create user in DB: "+err.Error())
+
+		errMsg := fmt.Sprintf("%s:[!] Registration failed. Username might be taken.", EvSystemInfo)
+		ws.WriteMessage(websocket.TextMessage, []byte(errMsg))
+
+		return
+	}
 
 	sv.mu.Lock()
 	sv.Clients[UUID] = &ClientSession{
@@ -78,11 +90,14 @@ func (sv *Server) HandleConnection(ws *websocket.Conn) {
 	}
 	sv.mu.Unlock()
 
-	log.Printf("[DEBUG] New authenticated user: %s (ID: %s)", user.Username, UUID)
-	welcomeMsg := fmt.Sprintf("%s: Use /rooms to see public rooms. Join without password using /join -n <name>", EvSystemInfo)
+	l.Log(logger.INFO, fmt.Sprintf("New authenticated session: %s", user.Username))
+
+	time.Sleep(100 * time.Millisecond) // Margen para que el cliente active su Listen()
+	sv.sendAutoRooms(ws)
+
+	welcomeMsg := fmt.Sprintf("%s: Use /rooms to list public rooms. Join using /join -n <name>", EvSystemInfo)
 	ws.WriteMessage(websocket.TextMessage, []byte(welcomeMsg))
 
-	//
 	for {
 		_, messageBytes, err := ws.ReadMessage()
 		if err != nil {
@@ -113,7 +128,7 @@ func (sv *Server) HandleConnection(ws *websocket.Conn) {
 			continue
 		}
 
-		log.Printf("[DEBUG SERVER] INCOMING ENCRYPTED DATA from %s: %s", user.Username, msg)
+		l.Log(logger.DEBUG, fmt.Sprintf("CHAT PAYLOAD from %s: %s", user.Username, msg))
 
 		roomMsg := fmt.Sprintf("%s:[%s]: %s", EvChatMsg, user.Username, msg)
 		sv.Broadcast(roomMsg, ws, session.Room)
@@ -135,5 +150,5 @@ func NotifyPromotion(sv *Server, newHostUUID string) {
 	sysMsg := fmt.Sprintf("%s:[!] User %s has been promoted to Host.", EvSystemInfo, session.Username)
 	sv.Broadcast(sysMsg, nil, session.Room)
 
-	log.Printf("[DEBUG] Host promotion notification sent to %s", session.Username)
+	l.Log(logger.INFO, "Host promotion notification sent to: "+session.Username)
 }

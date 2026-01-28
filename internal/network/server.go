@@ -1,10 +1,12 @@
 package network
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"vanished-rooms/internal/logger"
@@ -40,6 +42,14 @@ var upgrader = websocket.Upgrader{
 func StartServer(port string, repository *storage.SQLiteRepository) {
 	ui.PrintRandomBanner()
 
+	l.Log(logger.WARN, "System boot: Purging existing ephemeral data...")
+	err := repository.PurgeEverything()
+	if err != nil {
+		l.Log(logger.ERROR, "Startup purge failed: "+err.Error())
+	} else {
+		l.Log(logger.INFO, "Database is clean. Ready for new connections.")
+	}
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
@@ -61,7 +71,7 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 		tmpl, err := template.ParseFiles("./web/index.html")
 		if err != nil {
 			l.Log(logger.ERROR, "Template missing: ./web/index.html")
-			http.Error(w, "Error interno: No se pudo cargar el portal.", 500)
+			http.Error(w, "Internal Error: Could not load the portal.", 500)
 			return
 		}
 
@@ -85,7 +95,7 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	go func() {
-		l.Log(logger.WARN, "You are connection to the wire....")
+		l.Log(logger.WARN, "Connecting to the wire...")
 		l.Log(logger.INFO, "Vanished Rooms listening on port: "+port+" (Tor Mode)")
 		err := http.ListenAndServe(":"+port, nil)
 		if err != nil && err != http.ErrServerClosed {
@@ -94,15 +104,33 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 	}()
 
 	<-stop
+
 	l.Log(logger.INFO, "Shutting down... Purging database.")
-	err := sv.SQLiteRepository.DeleteAllUsers()
+
+	err = sv.SQLiteRepository.PurgeEverything()
 	if err != nil {
-		l.Log(logger.ERROR, "Failed to purge users: "+err.Error())
+		l.Log(logger.ERROR, "Failed to purge database: "+err.Error())
 	}
 
 	l.Log(logger.INFO, "Vanished successfully.")
-
 }
+
 func generateUUID() string {
 	return uuid.New().String()
+}
+
+func (sv *Server) sendAutoRooms(conn *websocket.Conn) {
+	rooms, err := sv.SQLiteRepository.ListPublicRooms()
+	if err != nil || len(rooms) == 0 {
+		return
+	}
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("%s:\n\n=== PUBLIC ROOMS AVAILABLE ;)) ===\n", EvSystemInfo))
+	for _, name := range rooms {
+		fmt.Fprintf(&sb, " • %s\n", name)
+	}
+	sb.WriteString("================================")
+
+	conn.WriteMessage(websocket.TextMessage, []byte(sb.String()))
 }
