@@ -24,7 +24,7 @@
 
 - **Anonymity via Tor:** Native routing through the Tor network to mask user IP addresses.
   
-- **Server Amnesia:** The server is configured to wipe all volatile memory and restart periodically, ensuring total data clearance. [DEV]
+- **Server Amnesia:** The server is configured to wipe all volatile memory and restart periodically, ensuring total data clearance.
   
 - **User-Centric Privacy Logic:** 
   - **Instant Purge:** User data is immediately wiped upon disconnection.
@@ -84,13 +84,14 @@ go run main.go client -u <username> -p <password> -k <path-private-rsa-key>
 ### ❓Help menu (connected)
 
 ```bash
-/create	-n <name> -p <pass> --private <y/n>	Create a new room and join automatically.
-/rooms	None	List all currently active rooms.
-/join	-n <name> -p <pass>	Join an existing room using credentials.
-/leave-room	None	Exit the current room.
-/users	None	List all users in your current room.
-/help	None	Display the help menu.
-/quit	None	Disconnect and remove your user permanently.
+/create	-n <name> --public	Creates a public room visible to everyone.
+/create	-n <name> -p <pass> --private	Creates a secure room (min. 8 characters password).
+/rooms	None	Lists all currently active public rooms.
+/join	-n <name> [-p <pass>]	Joins a room. Password is only required for private rooms.
+/leave-room	None	Exits the current room without disconnecting from the server.
+/users	None	Lists all users currently present in your room.
+/help	None	Displays the in-app help menu with ASCII styling.
+/quit	None	Disconnects from the network and purges your data permanently.
 ```
 > Examples
 
