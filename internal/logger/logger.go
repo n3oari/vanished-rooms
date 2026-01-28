@@ -26,6 +26,7 @@ const (
 	WARN       LogLevel = "WARN"
 	ERROR      LogLevel = "ERROR"
 	ONION_INFO LogLevel = "TRAFFIC-ONION"
+	MSG        LogLevel = "MSG"
 )
 
 type CustomLogger struct {
@@ -55,6 +56,8 @@ func (l *CustomLogger) Log(level LogLevel, message string) {
 		color = colorRed
 	case ONION_INFO:
 		color = colorPurple
+	case MSG:
+		color = colorBlue
 	default:
 		color = colorBlue
 	}

@@ -128,7 +128,7 @@ func (sv *Server) HandleConnection(ws *websocket.Conn) {
 			continue
 		}
 
-		l.Log(logger.DEBUG, fmt.Sprintf("CHAT PAYLOAD from %s: %s", user.Username, msg))
+		l.Log(logger.MSG, fmt.Sprintf(" %s: %s", user.Username, msg))
 
 		roomMsg := fmt.Sprintf("%s:[%s]: %s", EvChatMsg, user.Username, msg)
 		sv.Broadcast(roomMsg, ws, session.Room)

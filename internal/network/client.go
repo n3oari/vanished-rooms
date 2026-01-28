@@ -70,6 +70,7 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 	if err != nil {
 		log.Fatalf("[!] Connection error: %v\n[?] Ensure the server is online at %s", err, ServerAddr)
 	}
+	l.Log(logger.WARN, "Connecting to the wire...")
 	defer conn.Close()
 
 	client := &VanishedClient{
