@@ -23,7 +23,7 @@ import (
 // (PRODUCTION) -> TOR
 const ServerAddr = "ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws"
 
-const TorProxyAddr = "127.0.0.1:9150"
+const TorProxyAddr = "127.0.0.1:9050"
 
 type InternalEvent struct {
 	Type    string
