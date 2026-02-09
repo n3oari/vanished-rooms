@@ -48,8 +48,20 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 	var roomUUID string
 	var storedHash, salt []byte
 	var isPrivate bool
+	var maxUsers int
 
-	querySelect := `SELECT uuid, password_hash, salt, private FROM rooms WHERE name = ?`
+	var count int
+	queryCount := `SELECT COUNT(*) FROM participants WHERE uuid_room = ?`
+	err = tx.QueryRow(queryCount, roomUUID).Scan(&count)
+	if err != nil {
+		return "", "", err
+	}
+
+	if count >= maxUsers {
+		return "", "", errors.New("room is full")
+	}
+
+	querySelect := `SELECT uuid, password_hash, salt, private,maxUsers  FROM rooms WHERE name = ?`
 	err = tx.QueryRow(querySelect, nameRoom).Scan(&roomUUID, &storedHash, &salt, &isPrivate)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
