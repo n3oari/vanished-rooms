@@ -27,11 +27,3 @@ type Participants struct {
 	RoomUUID string `db:"uuid_room"`
 	UserUUID string `db:"uuid_user"`
 }
-
-type Messages struct {
-	UUID       string `db:"uuid"`
-	Content    string `db:"content"`
-	Timestamp  int64  `db:"timestamp"`
-	RoomUUID   string `db:"room_uuid"`
-	SenderUUID string `db:"sender_uuid"`
-}

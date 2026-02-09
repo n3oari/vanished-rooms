@@ -25,6 +25,13 @@ type ClientSession struct {
 	Username  string
 	PublicKey string
 	Room      string
+	writeMu   sync.Mutex // ← Añadido
+}
+
+func (c *ClientSession) Send(msg []byte) error {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	return c.wsConn.WriteMessage(websocket.TextMessage, msg)
 }
 
 type Server struct {
@@ -41,7 +48,6 @@ var upgrader = websocket.Upgrader{
 
 func StartServer(port string, repository *storage.SQLiteRepository) {
 	ui.PrintRandomBanner()
-
 	l.Log(logger.WARN, "System boot: Purging existing ephemeral data...")
 	err := repository.PurgeEverything()
 	if err != nil {
@@ -74,7 +80,6 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 			http.Error(w, "Internal Error: Could not load the portal.", 500)
 			return
 		}
-
 		data := struct {
 			Banner1 string
 			Banner2 string
@@ -84,7 +89,6 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 			Banner2: ui.Banner2,
 			Banner3: ui.Banner3,
 		}
-
 		err = tmpl.Execute(w, data)
 		if err != nil {
 			l.Log(logger.ERROR, "Render error: "+err.Error())
@@ -104,14 +108,11 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 	}()
 
 	<-stop
-
 	l.Log(logger.INFO, "Shutting down... Purging database.")
-
 	err = sv.SQLiteRepository.PurgeEverything()
 	if err != nil {
 		l.Log(logger.ERROR, "Failed to purge database: "+err.Error())
 	}
-
 	l.Log(logger.INFO, "Vanished successfully.")
 }
 
@@ -131,6 +132,5 @@ func (sv *Server) sendAutoRooms(conn *websocket.Conn) {
 		fmt.Fprintf(&sb, " • %s\n", name)
 	}
 	sb.WriteString("================================")
-
 	conn.WriteMessage(websocket.TextMessage, []byte(sb.String()))
 }
