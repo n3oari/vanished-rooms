@@ -6,3 +6,7 @@ internal/storage/schema.go
 web/
 vanished-rooms.log
 *.db
+*.pem
+*sqlite
+*.db-shm
+*.db-wal
