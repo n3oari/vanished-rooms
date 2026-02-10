@@ -25,7 +25,7 @@ type ClientSession struct {
 	Username  string
 	PublicKey string
 	Room      string
-	writeMu   sync.Mutex // ← Añadido
+	writeMu   sync.Mutex
 }
 
 func (c *ClientSession) Send(msg []byte) error {

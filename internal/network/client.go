@@ -47,7 +47,6 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey, useTor bool)
 		log.Fatal("[!] Private RSA Key is nil")
 	}
 
-	// Seleccionar dirección del servidor según el modo
 	var serverAddr string
 	if useTor {
 		serverAddr = ServerAddrTor
