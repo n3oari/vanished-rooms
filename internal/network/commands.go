@@ -125,24 +125,28 @@ func (sv *Server) handleJoinCommand(conn *websocket.Conn, User *storage.Users, m
 	roomPass := extractFlag(msg, "-p")
 
 	if roomName == "" {
-		conn.WriteMessage(websocket.TextMessage, []byte("[!] Usage: /join -n <name> -p <pass>"))
+		conn.WriteMessage(websocket.TextMessage, []byte("[!] Usage: /join -n <name> [-p <pass>]"))
 		return
 	}
 
-	roomUUID, err := sv.SQLiteRepository.GetRoomByName(roomName)
-	if err != nil {
-		conn.WriteMessage(websocket.TextMessage, []byte("[!] Room not found."))
-		return
-	}
-
-	if err := sv.SQLiteRepository.LimitUsersInRoom(roomUUID); err != nil {
-		conn.WriteMessage(websocket.TextMessage, []byte("[!] Room is full."))
-		return
-	}
-
+	// JoinRoom hace todas las validaciones internamente
 	roomID, hostID, err := sv.SQLiteRepository.JoinRoom(User.UUID, roomName, roomPass)
 	if err != nil {
-		conn.WriteMessage(websocket.TextMessage, []byte("[!] Access denied: Invalid password or room error."))
+		// Mensajes específicos según el error
+		var errorMsg string
+		switch err.Error() {
+		case "room is full":
+			errorMsg = "[!] Room is full."
+		case "invalid password":
+			errorMsg = "[!] Access denied: Invalid password."
+		case "room not found":
+			errorMsg = "[!] Room not found."
+		case "already in room":
+			errorMsg = "[!] You are already in this room."
+		default:
+			errorMsg = "[!] Error joining room."
+		}
+		conn.WriteMessage(websocket.TextMessage, []byte(errorMsg))
 		return
 	}
 
@@ -160,7 +164,7 @@ func (sv *Server) handleJoinCommand(conn *websocket.Conn, User *storage.Users, m
 
 	if hostExists && hostID != User.UUID {
 		deliveryReq := fmt.Sprintf("%s:REQ_FROM:%s:%s", EvKeyDelivery, User.Username, User.PublicRSAKey)
-		hostSession.wsConn.WriteMessage(websocket.TextMessage, []byte(deliveryReq))
+		hostSession.Send([]byte(deliveryReq))
 	}
 
 	sv.Broadcast(fmt.Sprintf("%s:%s has joined the room", EvUserJoined, User.Username), conn, roomID)
@@ -248,7 +252,7 @@ func (sv *Server) handleSendKeyCommand(sender *storage.Users, msg string) {
 
 	if targetSession != nil {
 		deliveryMsg := fmt.Sprintf("%s:FROM:%s:%s", EvKeyDelivery, sender.Username, encryptedKey)
-		targetSession.wsConn.WriteMessage(websocket.TextMessage, []byte(deliveryMsg))
+		targetSession.Send([]byte(deliveryMsg))
 		l.Log(logger.ONION_INFO, fmt.Sprintf("RELAYING AES KEY: [%s] -> [%s]", sender.Username, targetName))
 	}
 }

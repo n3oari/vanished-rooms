@@ -48,9 +48,11 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 	var roomUUID string
 	var storedHash, salt []byte
 	var isPrivate bool
+	var maxUsers int
 
-	querySelect := `SELECT uuid, password_hash, salt, private FROM rooms WHERE name = ?`
-	err = tx.QueryRow(querySelect, nameRoom).Scan(&roomUUID, &storedHash, &salt, &isPrivate)
+	// 1. Obtener datos de la room
+	querySelect := `SELECT uuid, password_hash, salt, private, max_users FROM rooms WHERE name = ?`
+	err = tx.QueryRow(querySelect, nameRoom).Scan(&roomUUID, &storedHash, &salt, &isPrivate, &maxUsers)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", "", errors.New("room not found")
@@ -58,13 +60,27 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 		return "", "", err
 	}
 
+	// 2. Contar participantes
+	var count int
+	queryCount := `SELECT COUNT(*) FROM participants WHERE uuid_room = ?`
+	err = tx.QueryRow(queryCount, roomUUID).Scan(&count)
+	if err != nil {
+		return "", "", err
+	}
+
+	if count >= maxUsers {
+		return "", "", errors.New("room is full")
+	}
+
+	// 3. Validar contraseña (solo si es privada)
 	if isPrivate {
 		inputHash := cryptoutils.HashPassword(passRoom, salt)
-		if !bytes.Equal(inputHash, []byte(storedHash)) {
-			return "", "", errors.New("invalid credentials")
+		if !bytes.Equal(inputHash, storedHash) {
+			return "", "", errors.New("invalid password")
 		}
 	}
 
+	// 4. Obtener host
 	var hostUUID string
 	queryHost := `SELECT uuid FROM users WHERE uuid_current_room = ? AND is_owner = 1 LIMIT 1`
 	err = tx.QueryRow(queryHost, roomUUID).Scan(&hostUUID)
@@ -72,7 +88,8 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 		hostUUID = ""
 	}
 
-	queryInsert := `INSERT INTO participants (uuid_room, uuid_user) VALUES (?,?)`
+	// 5. Insertar participante
+	queryInsert := `INSERT INTO participants (uuid_room, uuid_user) VALUES (?, ?)`
 	if _, err = tx.Exec(queryInsert, roomUUID, userUUID); err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			return "", "", errors.New("already in room")
@@ -80,6 +97,7 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 		return "", "", err
 	}
 
+	// 6. Actualizar usuario
 	queryUpdate := `UPDATE users SET uuid_current_room = ?, is_owner = 0, joined_at = CURRENT_TIMESTAMP WHERE uuid = ?`
 	if _, err = tx.Exec(queryUpdate, roomUUID, userUUID); err != nil {
 		return "", "", err
@@ -91,7 +109,6 @@ func (r *SQLiteRepository) JoinRoom(userUUID, nameRoom, passRoom string) (string
 
 	return roomUUID, hostUUID, nil
 }
-
 func (r *SQLiteRepository) LeaveRoomAndDeleteRoomIfEmpty(userUUID, roomUUID string) error {
 
 	tx, err := r.db.Begin()

@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"vanished-rooms/internal/cryptoutils"
 	"vanished-rooms/internal/logger"
 	"vanished-rooms/internal/ui"
@@ -17,13 +18,11 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-// (DEVELOPMENT) -> LOCALHOST
-//const ServerAddr = "ws://127.0.0.1:8080/ws"
-
-// (PRODUCTION) -> TOR
-const ServerAddr = "ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws"
-
-const TorProxyAddr = "127.0.0.1:9050"
+const (
+	ServerAddrLocal = "ws://127.0.0.1:8080/ws"
+	ServerAddrTor   = "ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws"
+	TorProxyAddr    = "127.0.0.1:9050"
+)
 
 type InternalEvent struct {
 	Type    string
@@ -36,10 +35,11 @@ type VanishedClient struct {
 	privateKey *rsa.PrivateKey
 	isHost     bool
 	username   string
+	writeMu    sync.Mutex
 	l          *logger.CustomLogger
 }
 
-func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
+func StartClient(user string, pass string, privRSA *rsa.PrivateKey, useTor bool) {
 	ui.PrintRandomBanner()
 	l := logger.New()
 
@@ -47,12 +47,19 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		log.Fatal("[!] Private RSA Key is nil")
 	}
 
+	// Seleccionar dirección del servidor según el modo
+	var serverAddr string
+	if useTor {
+		serverAddr = ServerAddrTor
+	} else {
+		serverAddr = ServerAddrLocal
+	}
+
 	dialer := websocket.DefaultDialer
 	l.Log(logger.WARN, "Connecting to the wire...")
-	isOnion := strings.HasSuffix(strings.ToLower(ServerAddr), ".onion/ws")
 
-	if isOnion {
-		l.Log(logger.INFO, "Tor mode detected. Configuring SOCKS5 tunnel...")
+	if useTor {
+		l.Log(logger.INFO, "Tor mode enabled. Configuring SOCKS5 tunnel...")
 		socksDialer, err := proxy.SOCKS5("tcp", TorProxyAddr, nil, proxy.Direct)
 		if err != nil {
 			log.Fatalf("[!] Error: Could not connect to Tor at %s. Is the service running?", TorProxyAddr)
@@ -61,16 +68,15 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 			return socksDialer.Dial(network, addr)
 		}
 	} else {
-		l.Log(logger.INFO, "Local mode detected. Bypassing Tor proxy for development.")
+		l.Log(logger.INFO, "Direct connection mode. Bypassing Tor proxy.")
 	}
 
-	l.Log(logger.INFO, "Establishing connection to: "+ServerAddr)
-
-	conn, _, err := dialer.Dial(ServerAddr, nil)
+	l.Log(logger.INFO, "Establishing connection to: "+serverAddr)
+	conn, _, err := dialer.Dial(serverAddr, nil)
 	if err != nil {
-		log.Fatalf("[!] Connection error: %v\n[?] Ensure the server is online at %s", err, ServerAddr)
+		log.Fatalf("[!] Connection error: %v\n[?] Ensure the server is online at %s", err, serverAddr)
 	}
-	l.Log(logger.WARN, "Connecting to the wire...")
+	l.Log(logger.WARN, "Connected successfully!")
 	defer conn.Close()
 
 	client := &VanishedClient{
@@ -85,14 +91,15 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 	if len(pass) < 8 {
 		fmt.Println("\r[!] Security Error: Password too short.")
 		fmt.Println("[i] For your safety, passwords must be at least 8 characters long.")
-		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Insecure password"))
+		client.Close("Insecure password")
 		os.Exit(1)
 	}
 
 	pubKeyBytes, _ := cryptoutils.EncodePublicKeyToBase64(privRSA)
-	client.wsConn.WriteMessage(websocket.TextMessage, []byte(user))
-	client.wsConn.WriteMessage(websocket.TextMessage, []byte(pass))
-	client.wsConn.WriteMessage(websocket.TextMessage, []byte(pubKeyBytes))
+
+	client.Send([]byte(user))
+	client.Send([]byte(pass))
+	client.Send([]byte(pubKeyBytes))
 
 	go client.Listen()
 
@@ -113,7 +120,7 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 		}
 
 		if text == "/quit" {
-			client.wsConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			client.Close("")
 			return
 		}
 		client.SendMessage(text)
@@ -148,7 +155,19 @@ func (c *VanishedClient) SendMessage(text string) {
 	} else {
 		finalMsg = text
 	}
-	c.wsConn.WriteMessage(websocket.TextMessage, []byte(finalMsg))
+	c.Send([]byte(finalMsg))
+}
+
+func (c *VanishedClient) Send(msg []byte) error {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	return c.wsConn.WriteMessage(websocket.TextMessage, msg)
+}
+
+func (c *VanishedClient) Close(reason string) {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	c.wsConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, reason))
 }
 
 func (c *VanishedClient) parseRawLine(line string) InternalEvent {
@@ -251,6 +270,8 @@ func (c *VanishedClient) processKeyRequest(targetUser string, targetPubKey strin
 	encryptedBytes, err := cryptoutils.EncryptWithPublicKey(c.aesKey, targetPubKey)
 	if err == nil {
 		encKeyB64 := base64.StdEncoding.EncodeToString(encryptedBytes)
-		c.wsConn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("/sendKey %s %s", targetUser, encKeyB64)))
+		if err := c.Send([]byte(fmt.Sprintf("/sendKey %s %s", targetUser, encKeyB64))); err != nil {
+			c.l.Log(logger.ERROR, fmt.Sprintf("Failed to send key: %v", err))
+		}
 	}
 }

@@ -92,7 +92,7 @@ func (sv *Server) HandleConnection(ws *websocket.Conn) {
 
 	l.Log(logger.INFO, fmt.Sprintf("New authenticated session: %s", user.Username))
 
-	time.Sleep(100 * time.Millisecond) // Margen para que el cliente active su Listen()
+	time.Sleep(100 * time.Millisecond)
 	sv.sendAutoRooms(ws)
 
 	welcomeMsg := fmt.Sprintf("%s: Use /rooms to list public rooms. Join using /join -n <name>", EvSystemInfo)
