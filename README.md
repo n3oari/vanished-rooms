@@ -45,6 +45,12 @@ The application follows a decentralized **Peer-to-Peer (P2P)** logic for key dis
 
 ![Logic Sequence Diagram](/img/secuencia.png)
 
+
+## Class diagram
+
+
+![Class diagram](/img/diagramaclase.png)
+
 <br>
 
 ### Usage
