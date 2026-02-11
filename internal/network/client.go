@@ -89,8 +89,8 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey, useTor bool)
 	}
 
 	if len(pass) < 8 {
-		fmt.Println("\r[!] Security Error: Password too short.")
-		fmt.Println("[i] For your safety, passwords must be at least 8 characters long.")
+		fmt.Println("\r" + ui.RenderErrorMessage("Security Error: Password too short."))
+		fmt.Println(ui.RenderInfoMessage("For your safety, passwords must be at least 8 characters long."))
 		client.Close("Insecure password")
 		os.Exit(1)
 	}
@@ -103,14 +103,14 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey, useTor bool)
 
 	go client.Listen()
 
-	fmt.Printf("[+] Connection successful. Welcome to the secure environment, %s.\n", user)
+	fmt.Println(ui.RenderSuccessMessage(fmt.Sprintf("Connection successful. Welcome to the secure environment, %s.", user)))
 
 	inputScanner := bufio.NewScanner(os.Stdin)
-	fmt.Print("> ")
+	fmt.Print(ui.RenderPrompt())
 	for inputScanner.Scan() {
 		text := strings.TrimSpace(inputScanner.Text())
 		if text == "" {
-			fmt.Print("> ")
+			fmt.Print(ui.RenderPrompt())
 			continue
 		}
 
@@ -124,7 +124,7 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey, useTor bool)
 			return
 		}
 		client.SendMessage(text)
-		fmt.Print("> ")
+		fmt.Print(ui.RenderPrompt())
 	}
 }
 
@@ -132,7 +132,7 @@ func (c *VanishedClient) Listen() {
 	for {
 		_, message, err := c.wsConn.ReadMessage()
 		if err != nil {
-			fmt.Println("\n[!] Connection lost with server.")
+			fmt.Println("\n" + ui.RenderErrorMessage("Connection lost with server."))
 			os.Exit(0)
 		}
 		line := string(message)
@@ -200,11 +200,19 @@ func (c *VanishedClient) dispatch(event InternalEvent) {
 		c.handleSystemInfo(event.Payload)
 	case EvHostPromoted:
 		c.isHost = true
-		c.l.Log(logger.INFO, "SYSTEM: You have been promoted to room HOST.")
+		c.l.Log(logger.INFO, ui.RenderSystemMessage("You have been promoted to room HOST."))
 	}
 }
 
 func (c *VanishedClient) processIncomingChat(payload string) {
+	// Detectar mensajes del sistema que vienen con formato del servidor
+	systemPrefix := EvSystemInfo + ":"
+	if strings.HasPrefix(payload, systemPrefix) {
+		content := strings.TrimPrefix(payload, systemPrefix)
+		fmt.Printf("\r%s\n%s", content, ui.RenderPrompt())
+		return
+	}
+
 	if strings.Contains(payload, ":") {
 		parts := strings.SplitN(payload, ": ", 2)
 		if len(parts) == 2 {
@@ -213,13 +221,15 @@ func (c *VanishedClient) processIncomingChat(payload string) {
 			if len(c.aesKey) > 0 {
 				decrypted, err := cryptoutils.DecryptForChat(encryptedData, c.aesKey)
 				if err == nil {
-					fmt.Printf("\r%s: %s\n> ", username, decrypted)
+					encrypted := ui.RenderEncryptedIndicator()
+					msg := ui.RenderChatMessage(username, decrypted)
+					fmt.Printf("\r%s%s\n%s", encrypted, msg, ui.RenderPrompt())
 					return
 				}
 			}
 		}
 	}
-	fmt.Printf("\r%s\n> ", payload)
+	fmt.Printf("\r%s\n%s", payload, ui.RenderPrompt())
 }
 
 func (c *VanishedClient) handleKeyDelivery(line string) {
@@ -235,7 +245,7 @@ func (c *VanishedClient) handleKeyDelivery(line string) {
 		decryptedKey, err := cryptoutils.DecryoptWithPrivateKey(keyData, c.privateKey)
 		if err == nil {
 			c.aesKey = decryptedKey
-			c.l.Log(logger.INFO, "AES Key established. Chat encryption ENABLED.")
+			c.l.Log(logger.INFO, ui.RenderSuccessMessage("AES Key established. Chat encryption ENABLED."))
 		}
 	} else if subCommand == "REQ_FROM" {
 		c.processKeyRequest(parts[1], keyData)
@@ -258,7 +268,7 @@ func (c *VanishedClient) handleSystemInfo(payload string) {
 		if err == nil {
 			c.aesKey = newKey
 			c.isHost = true
-			c.l.Log(logger.INFO, "SYSTEM: AES Key generated. You are the room Host.")
+			c.l.Log(logger.INFO, ui.RenderSystemMessage("AES Key generated. You are the room Host."))
 		}
 	}
 }
@@ -271,7 +281,7 @@ func (c *VanishedClient) processKeyRequest(targetUser string, targetPubKey strin
 	if err == nil {
 		encKeyB64 := base64.StdEncoding.EncodeToString(encryptedBytes)
 		if err := c.Send([]byte(fmt.Sprintf("/sendKey %s %s", targetUser, encKeyB64))); err != nil {
-			c.l.Log(logger.ERROR, fmt.Sprintf("Failed to send key: %v", err))
+			c.l.Log(logger.ERROR, ui.RenderErrorMessage(fmt.Sprintf("Failed to send key: %v", err)))
 		}
 	}
 }

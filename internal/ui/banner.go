@@ -3,6 +3,8 @@ package ui
 import (
 	"fmt"
 	"math/rand/v2"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 var Banners = []string{Banner1, Banner2, Banner3}
@@ -88,11 +90,28 @@ var Banner2 string = `
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠛⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`
 
+// Estilos para los banners
+var (
+	bannerStyle = lipgloss.NewStyle().
+			Foreground(ColorPrimary).
+			Bold(true)
+
+	subtitleStyle = lipgloss.NewStyle().
+			Foreground(ColorSecondary).
+			Italic(true).
+			MarginTop(1)
+)
+
 func GetRandomBanner() string {
 	index := rand.IntN(len(Banners))
-	return Banners[index]
+	return bannerStyle.Render(Banners[index])
 }
 
 func PrintRandomBanner() {
-	fmt.Println(GetRandomBanner())
+	banner := GetRandomBanner()
+	subtitle := subtitleStyle.Render("🔐 Ephemeral. Encrypted. Anonymous.")
+
+	fmt.Println(banner)
+	fmt.Println(subtitle)
+	fmt.Println()
 }

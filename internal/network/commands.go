@@ -6,6 +6,7 @@ import (
 	"vanished-rooms/internal/cryptoutils"
 	"vanished-rooms/internal/logger"
 	"vanished-rooms/internal/storage"
+	"vanished-rooms/internal/ui"
 
 	"github.com/gorilla/websocket"
 )
@@ -169,7 +170,15 @@ func (sv *Server) handleJoinCommand(conn *websocket.Conn, User *storage.Users, m
 
 	sv.Broadcast(fmt.Sprintf("%s:%s has joined the room", EvUserJoined, User.Username), conn, roomID)
 	l.Log(logger.INFO, fmt.Sprintf("User %s joined room %s", User.Username, roomName))
-	conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[+] Joined room: %s", EvSystemInfo, roomName)))
+	//	conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[+] Joined room: %s", EvSystemInfo, roomName)))
+
+	sv.mu.Lock()
+	session, exists := sv.Clients[User.UUID]
+	sv.mu.Unlock()
+	if exists {
+		session.Send([]byte(fmt.Sprintf("%s:[+] Joined room: %s", EvSystemInfo, roomName)))
+	}
+
 }
 
 func (sv *Server) handleUsersCommand(conn *websocket.Conn, user *storage.Users) {
@@ -179,30 +188,28 @@ func (sv *Server) handleUsersCommand(conn *websocket.Conn, user *storage.Users) 
 	}
 
 	users, _ := sv.SQLiteRepository.ListAllUsersInRoom(user.CurrentRoomUUID)
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%s:\n=== USER LIST ===\n", EvSystemInfo))
-	for _, u := range users {
-		fmt.Fprintf(&sb, " • %s\n", u.Username)
+
+	// Convertir a slice de strings
+	usernames := make([]string, len(users))
+	for i, u := range users {
+		usernames[i] = u.Username
 	}
-	sb.WriteString("======================")
-	conn.WriteMessage(websocket.TextMessage, []byte(sb.String()))
+
+	formattedList := fmt.Sprintf("%s:\n%s", EvSystemInfo, ui.RenderUserList(usernames, user.Username))
+	conn.WriteMessage(websocket.TextMessage, []byte(formattedList))
 }
 
 func (sv *Server) handleRoomsCommand(conn *websocket.Conn) {
 	rooms, _ := sv.SQLiteRepository.ListAllRooms()
-	if len(rooms) == 0 {
-		conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%s:[i] No public rooms available.", EvSystemInfo)))
-		return
+
+	// Convertir a slice de strings
+	roomNames := make([]string, len(rooms))
+	for i, room := range rooms {
+		roomNames[i] = room.Name
 	}
 
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%s:\n=== ROOM LIST ===\n", EvSystemInfo))
-	for _, room := range rooms {
-		fmt.Fprintf(&sb, " • %s\n", room.Name)
-	}
-	sb.WriteString("======================")
-
-	conn.WriteMessage(websocket.TextMessage, []byte(sb.String()))
+	formattedList := fmt.Sprintf("%s:\n%s", EvSystemInfo, ui.RenderRoomList(roomNames))
+	conn.WriteMessage(websocket.TextMessage, []byte(formattedList))
 }
 
 func (sv *Server) handleLeaveRoomCommand(conn *websocket.Conn, user *storage.Users) {
@@ -258,31 +265,7 @@ func (sv *Server) handleSendKeyCommand(sender *storage.Users, msg string) {
 }
 
 func (sv *Server) handleHelpCommand(conn *websocket.Conn) {
-	var sb strings.Builder
-
-	sb.WriteString(fmt.Sprintf("%s:\n", EvSystemInfo))
-	sb.WriteString("┌──────────────────────────────────────────────────────────┐\n")
-	sb.WriteString("│              VANISHED ROOMS - COMMAND MENU               │\n")
-	sb.WriteString("├──────────────────────────────────────────────────────────┤\n")
-	sb.WriteString("│ [ ROOM CREATION ]                                        │\n")
-	sb.WriteString("│  /create -n <name> --public                              │\n")
-	sb.WriteString("│      -> Create a room visible to everyone.               │\n")
-	sb.WriteString("│  /create -n <name> -p <pass> --private                   │\n")
-	sb.WriteString("│      -> Secure room (min 8 chars password).              │\n")
-	sb.WriteString("│                                                          │\n")
-	sb.WriteString("│ [ NAVIGATION ]                                           │\n")
-	sb.WriteString("│  /rooms                List all public rooms             │\n")
-	sb.WriteString("│  /join -n <name>       Join public (no -p needed)        │\n")
-	sb.WriteString("│  /join -n <name> -p <p> Join private room                │\n")
-	sb.WriteString("│  /leave-room           Exit current room                 │\n")
-	sb.WriteString("│                                                          │\n")
-	sb.WriteString("│ [ SYSTEM ]                                               │\n")
-	sb.WriteString("│  /users                List participants in room         │\n")
-	sb.WriteString("│  /help                 Show this menu                    │\n")
-	sb.WriteString("│  /quit                 Close connection                  │\n")
-	sb.WriteString("└──────────────────────────────────────────────────────────┘\n")
-
-	conn.WriteMessage(websocket.TextMessage, []byte(sb.String()))
+	conn.WriteMessage(websocket.TextMessage, []byte(ui.RenderHelpMenu()))
 }
 
 func (sv *Server) handleQuitCommand(conn *websocket.Conn) {

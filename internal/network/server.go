@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 	"vanished-rooms/internal/logger"
@@ -25,7 +24,7 @@ type ClientSession struct {
 	Username  string
 	PublicKey string
 	Room      string
-	writeMu   sync.Mutex // ← Añadido
+	writeMu   sync.Mutex
 }
 
 func (c *ClientSession) Send(msg []byte) error {
@@ -55,15 +54,12 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 	} else {
 		l.Log(logger.INFO, "Database is clean. Ready for new connections.")
 	}
-
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-
 	sv := &Server{
 		Clients:          make(map[string]*ClientSession),
 		SQLiteRepository: repository,
 	}
-
 	http.HandleFunc("/ws", l.MiddlewareRequest(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -72,7 +68,6 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 		}
 		go sv.HandleConnection(conn)
 	}))
-
 	http.HandleFunc("/", l.MiddlewareRequest(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFiles("./web/index.html")
 		if err != nil {
@@ -94,10 +89,8 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 			l.Log(logger.ERROR, "Render error: "+err.Error())
 		}
 	}))
-
 	fs := http.FileServer(http.Dir("./web/static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
-
 	go func() {
 		l.Log(logger.WARN, "Connecting to the wire...")
 		l.Log(logger.INFO, "Vanished Rooms listening on port: "+port+" (Tor Mode)")
@@ -106,7 +99,6 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 			l.Log(logger.ERROR, "Fatal Server Error: "+err.Error())
 		}
 	}()
-
 	<-stop
 	l.Log(logger.INFO, "Shutting down... Purging database.")
 	err = sv.SQLiteRepository.PurgeEverything()
@@ -126,11 +118,7 @@ func (sv *Server) sendAutoRooms(conn *websocket.Conn) {
 		return
 	}
 
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%s:\n\n=== PUBLIC ROOMS AVAILABLE ;)) ===\n", EvSystemInfo))
-	for _, name := range rooms {
-		fmt.Fprintf(&sb, " • %s\n", name)
-	}
-	sb.WriteString("================================")
-	conn.WriteMessage(websocket.TextMessage, []byte(sb.String()))
+	// Usar la función de estilo RenderRoomList
+	formattedList := fmt.Sprintf("%s:\n%s", EvSystemInfo, ui.RenderRoomList(rooms))
+	conn.WriteMessage(websocket.TextMessage, []byte(formattedList))
 }
