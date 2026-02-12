@@ -53,6 +53,11 @@ The application follows a decentralized **Peer-to-Peer (P2P)** logic for key dis
 
 <br>
 
+## Room example
+
+![Users in room](/img/users.png)
+
+
 ### Usage
 
 > You will need a tor service running
@@ -71,6 +76,8 @@ http://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/
 </p>
 
 <br>
+
+❗ You need tor daemon / service running
 
 ```bash
 git clone https://github.com/n3oari/vanished-rooms.git

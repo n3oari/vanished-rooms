@@ -1382,3 +1382,70 @@ SYSTEM_INFO: (No password required for these rooms)
 2026/02/12 08:49:23 [INFO] Connection closed and UUID purged: 5dc3a693-ce11-4203-bd0c-e3821f98de47
 2026/02/12 08:49:41 [INFO] Shutting down... Purging database.
 2026/02/12 08:49:41 [INFO] Vanished successfully.
+2026/02/12 08:58:41 [INFO] Shutting down... Purging database.
+2026/02/12 08:58:41 [INFO] Vanished successfully.
+2026/02/12 08:58:43 [WARN] System boot: Purging existing ephemeral data...
+2026/02/12 08:58:43 [INFO] Database is clean. Ready for new connections.
+2026/02/12 08:58:43 [WARN] Connecting to the wire...
+2026/02/12 08:58:43 [INFO] Vanished Rooms listening on port: 8080 (Tor Mode)
+2026/02/12 08:59:06 [WARN] Connecting to the wire...
+2026/02/12 08:59:06 [INFO] Direct connection mode. Bypassing Tor proxy.
+2026/02/12 08:59:06 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/02/12 08:59:06 [TRAFFIC-ONION] GET /ws
+2026/02/12 08:59:06 [WARN] Connected successfully!
+2026/02/12 08:59:06 [INFO] New authenticated session: foo
+2026/02/12 08:59:14 [INFO] Room created: n by foo
+2026/02/12 08:59:14 [INFO] [1;3;38;2;93;167;255m[SYSTEM] AES Key generated. You are the room Host.[0m
+2026/02/12 08:59:23 [WARN] Connecting to the wire...
+2026/02/12 08:59:23 [INFO] Direct connection mode. Bypassing Tor proxy.
+2026/02/12 08:59:23 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/02/12 08:59:23 [TRAFFIC-ONION] GET /ws
+2026/02/12 08:59:23 [WARN] Connected successfully!
+2026/02/12 08:59:23 [INFO] New authenticated session: bar
+2026/02/12 08:59:27 [INFO] User bar joined room n
+2026/02/12 08:59:27 [TRAFFIC-ONION] RELAYING AES KEY: [foo] -> [bar]
+2026/02/12 08:59:27 [INFO] [1;38;2;0;217;163m[+] AES Key established. Chat encryption ENABLED.[0m
+2026/02/12 08:59:35 [WARN] Connecting to the wire...
+2026/02/12 08:59:35 [INFO] Direct connection mode. Bypassing Tor proxy.
+2026/02/12 08:59:35 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/02/12 08:59:35 [TRAFFIC-ONION] GET /ws
+2026/02/12 08:59:35 [WARN] Connected successfully!
+2026/02/12 08:59:35 [INFO] New authenticated session: joe
+2026/02/12 08:59:39 [INFO] User joe joined room n
+2026/02/12 08:59:39 [TRAFFIC-ONION] RELAYING AES KEY: [foo] -> [joe]
+2026/02/12 08:59:39 [INFO] [1;38;2;0;217;163m[+] AES Key established. Chat encryption ENABLED.[0m
+2026/02/12 08:59:55 [WARN] Connecting to the wire...
+2026/02/12 08:59:55 [INFO] Direct connection mode. Bypassing Tor proxy.
+2026/02/12 08:59:55 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/02/12 08:59:55 [TRAFFIC-ONION] GET /ws
+2026/02/12 08:59:55 [WARN] Connected successfully!
+2026/02/12 08:59:55 [INFO] New authenticated session: doe
+2026/02/12 08:59:56 [INFO] User doe joined room n
+2026/02/12 08:59:56 [TRAFFIC-ONION] RELAYING AES KEY: [foo] -> [doe]
+2026/02/12 08:59:56 [INFO] [1;38;2;0;217;163m[+] AES Key established. Chat encryption ENABLED.[0m
+2026/02/12 09:00:04 [WARN] Connecting to the wire...
+2026/02/12 09:00:04 [INFO] Direct connection mode. Bypassing Tor proxy.
+2026/02/12 09:00:04 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/02/12 09:00:04 [TRAFFIC-ONION] GET /ws
+2026/02/12 09:00:04 [WARN] Connected successfully!
+2026/02/12 09:00:04 [INFO] New authenticated session: alice
+2026/02/12 09:00:08 [INFO] User alice joined room n
+2026/02/12 09:00:08 [TRAFFIC-ONION] RELAYING AES KEY: [foo] -> [alice]
+2026/02/12 09:00:08 [INFO] [1;38;2;0;217;163m[+] AES Key established. Chat encryption ENABLED.[0m
+2026/02/12 09:00:33 [WARN] Connecting to the wire...
+2026/02/12 09:00:33 [INFO] Direct connection mode. Bypassing Tor proxy.
+2026/02/12 09:00:33 [INFO] Establishing connection to: ws://127.0.0.1:8080/ws
+2026/02/12 09:00:33 [TRAFFIC-ONION] GET /ws
+2026/02/12 09:00:33 [WARN] Connected successfully!
+2026/02/12 09:00:33 [INFO] New authenticated session: foobar
+2026/02/12 09:00:35 [INFO] User foobar joined room n
+2026/02/12 09:00:35 [TRAFFIC-ONION] RELAYING AES KEY: [foo] -> [foobar]
+2026/02/12 09:00:35 [INFO] [1;38;2;0;217;163m[+] AES Key established. Chat encryption ENABLED.[0m
+2026/02/12 09:01:24 [MSG]  foobar: S5vnPil3g6eoWABTnoDvwfP+sGJQMYUj6RFpBLZQ
+2026/02/12 09:01:29 [MSG]  alice: ZYjmPCoaklNP9F0vJ/urxrh9RPyDCJ4puYCCrC8oO5g26KKBhg==
+2026/02/12 09:01:41 [MSG]  foo: dPS0cQueTPtxg0Ur77GlgX9fYbZ/h76xfH2giTpWZhI=
+2026/02/12 09:04:18 [INFO] User foobar exiting. Cleaning up room resources...
+2026/02/12 09:04:18 [INFO] New host assigned for room 29aafbd4-0965-45ed-a590-469874823ba0: e2d9ca85-b369-408f-8276-d371473f5562
+2026/02/12 09:04:18 [INFO] [1;3;38;2;93;167;255m[SYSTEM] You have been promoted to room HOST.[0m
+2026/02/12 09:04:18 [INFO] Host promotion notification sent to: foo
+2026/02/12 09:04:18 [INFO] Connection closed and UUID purged: 386e0df4-cf36-479f-ba5e-0d7bdd432382
