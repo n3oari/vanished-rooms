@@ -14,7 +14,6 @@ var (
 	username       string
 	password       string
 	privateKeyPath string
-	useTor         bool
 )
 
 var clientCmd = &cobra.Command{
@@ -26,8 +25,7 @@ var clientCmd = &cobra.Command{
 		fmt.Println("[!] Starting Vanished Rooms Client...")
 		fmt.Println("[i] Routing all traffic through Tor (127.0.0.1:9050)")
 
-		// Llamada corregida con solo 3 argumentos
-		network.StartClient(username, password, priv, useTor)
+		network.StartClient(username, password, priv)
 	},
 }
 
@@ -37,7 +35,6 @@ func init() {
 	clientCmd.Flags().StringVarP(&username, "username", "u", "", "Username for the client")
 	clientCmd.Flags().StringVarP(&password, "password", "p", "", "Password for the client")
 	clientCmd.Flags().StringVarP(&privateKeyPath, "key", "k", "", "Path to your RSA private key (.pem)")
-	clientCmd.Flags().BoolVar(&useTor, "tor", false, "Route traffic through Tor (default: false)") // ← Añade esto
 
 	clientCmd.MarkFlagRequired("username")
 	clientCmd.MarkFlagRequired("password")
@@ -50,7 +47,6 @@ func prepareKeys(path string) (*rsa.PrivateKey, string) {
 		log.Fatalf("Error loading private key: %v", err)
 	}
 
-	// El cliente ahora genera el Base64 internamente, pero mantenemos la firma si la necesitas
 	pubKeyBase64, err := cryptoutils.EncodePublicKeyToBase64(privKey)
 	if err != nil {
 		log.Fatalf("Error encoding public key: %v", err)

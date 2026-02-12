@@ -54,12 +54,16 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 	} else {
 		l.Log(logger.INFO, "Database is clean. Ready for new connections.")
 	}
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
 	sv := &Server{
 		Clients:          make(map[string]*ClientSession),
 		SQLiteRepository: repository,
 	}
+
+	// WebSocket handler
 	http.HandleFunc("/ws", l.MiddlewareRequest(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -68,6 +72,8 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 		}
 		go sv.HandleConnection(conn)
 	}))
+
+	// Página principal (index.html con templates)
 	http.HandleFunc("/", l.MiddlewareRequest(func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFiles("./web/index.html")
 		if err != nil {
@@ -89,8 +95,7 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 			l.Log(logger.ERROR, "Render error: "+err.Error())
 		}
 	}))
-	fs := http.FileServer(http.Dir("./web/static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	go func() {
 		l.Log(logger.WARN, "Connecting to the wire...")
 		l.Log(logger.INFO, "Vanished Rooms listening on port: "+port+" (Tor Mode)")
@@ -99,6 +104,7 @@ func StartServer(port string, repository *storage.SQLiteRepository) {
 			l.Log(logger.ERROR, "Fatal Server Error: "+err.Error())
 		}
 	}()
+
 	<-stop
 	l.Log(logger.INFO, "Shutting down... Purging database.")
 	err = sv.SQLiteRepository.PurgeEverything()
@@ -117,7 +123,6 @@ func (sv *Server) sendAutoRooms(conn *websocket.Conn) {
 	if err != nil || len(rooms) == 0 {
 		return
 	}
-
 	formattedList := fmt.Sprintf("%s:\n%s", EvSystemInfo, ui.RenderRoomList(rooms))
 	conn.WriteMessage(websocket.TextMessage, []byte(formattedList))
 }

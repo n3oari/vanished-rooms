@@ -19,9 +19,8 @@ import (
 )
 
 const (
-	ServerAddrLocal = "ws://127.0.0.1:8080/ws"
-	ServerAddrTor   = "ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws"
-	TorProxyAddr    = "127.0.0.1:9050"
+	ServerAddr   = "ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws"
+	TorProxyAddr = "127.0.0.1:9050"
 )
 
 type InternalEvent struct {
@@ -39,7 +38,7 @@ type VanishedClient struct {
 	l          *logger.CustomLogger
 }
 
-func StartClient(user string, pass string, privRSA *rsa.PrivateKey, useTor bool) {
+func StartClient(user string, pass string, privRSA *rsa.PrivateKey) {
 	ui.PrintRandomBanner()
 	l := logger.New()
 
@@ -47,34 +46,24 @@ func StartClient(user string, pass string, privRSA *rsa.PrivateKey, useTor bool)
 		log.Fatal("[!] Private RSA Key is nil")
 	}
 
-	// Seleccionar dirección del servidor según el modo
-	var serverAddr string
-	if useTor {
-		serverAddr = ServerAddrTor
-	} else {
-		serverAddr = ServerAddrLocal
-	}
-
 	dialer := websocket.DefaultDialer
-	l.Log(logger.WARN, "Connecting to the wire...")
 
-	if useTor {
-		l.Log(logger.INFO, "Tor mode enabled. Configuring SOCKS5 tunnel...")
-		socksDialer, err := proxy.SOCKS5("tcp", TorProxyAddr, nil, proxy.Direct)
-		if err != nil {
-			log.Fatalf("[!] Error: Could not connect to Tor at %s. Is the service running?", TorProxyAddr)
-		}
-		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return socksDialer.Dial(network, addr)
-		}
-	} else {
-		l.Log(logger.INFO, "Direct connection mode. Bypassing Tor proxy.")
+	l.Log(logger.WARN, "Connecting to the wire...")
+	l.Log(logger.INFO, "Tor mode enabled. Configuring SOCKS5 tunnel...")
+
+	// Configuración directa del túnel SOCKS5
+	socksDialer, err := proxy.SOCKS5("tcp", TorProxyAddr, nil, proxy.Direct)
+	if err != nil {
+		log.Fatalf("[!] Error: Could not connect to Tor at %s. Is the service running?", TorProxyAddr)
+	}
+	dialer.NetDial = func(network, addr string) (net.Conn, error) {
+		return socksDialer.Dial(network, addr)
 	}
 
-	l.Log(logger.INFO, "Establishing connection to: "+serverAddr)
-	conn, _, err := dialer.Dial(serverAddr, nil)
+	l.Log(logger.INFO, "Establishing connection to: "+ServerAddr)
+	conn, _, err := dialer.Dial(ServerAddr, nil)
 	if err != nil {
-		log.Fatalf("[!] Connection error: %v\n[?] Ensure the server is online at %s", err, serverAddr)
+		log.Fatalf("[!] Connection error: %v\n[?] Ensure the server is online at %s", err, ServerAddr)
 	}
 	l.Log(logger.WARN, "Connected successfully!")
 	defer conn.Close()
@@ -205,7 +194,6 @@ func (c *VanishedClient) dispatch(event InternalEvent) {
 }
 
 func (c *VanishedClient) processIncomingChat(payload string) {
-	// Detectar mensajes del sistema que vienen con formato del servidor
 	systemPrefix := EvSystemInfo + ":"
 	if strings.HasPrefix(payload, systemPrefix) {
 		content := strings.TrimPrefix(payload, systemPrefix)
@@ -268,7 +256,8 @@ func (c *VanishedClient) handleSystemInfo(payload string) {
 		if err == nil {
 			c.aesKey = newKey
 			c.isHost = true
-			c.l.Log(logger.INFO, ui.RenderSystemMessage("AES Key generated. You are the room Host."))
+			l := logger.New()
+			l.Log(logger.INFO, ui.RenderSystemMessage("AES Key generated. You are the room Host."))
 		}
 	}
 }
@@ -281,7 +270,8 @@ func (c *VanishedClient) processKeyRequest(targetUser string, targetPubKey strin
 	if err == nil {
 		encKeyB64 := base64.StdEncoding.EncodeToString(encryptedBytes)
 		if err := c.Send([]byte(fmt.Sprintf("/sendKey %s %s", targetUser, encKeyB64))); err != nil {
-			c.l.Log(logger.ERROR, ui.RenderErrorMessage(fmt.Sprintf("Failed to send key: %v", err)))
+			l := logger.New()
+			l.Log(logger.ERROR, ui.RenderErrorMessage(fmt.Sprintf("Failed to send key: %v", err)))
 		}
 	}
 }
