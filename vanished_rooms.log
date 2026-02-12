@@ -1689,3 +1689,14 @@ SYSTEM_INFO: (No password required for these rooms)
 2026/02/12 19:41:22 [TRAFFIC-ONION] GET /ws
 2026/02/12 19:41:22 [INFO] New authenticated session: n3oari
 2026/02/12 19:41:32 [INFO] Connection closed and UUID purged: 20200be2-e13a-4430-aaa5-572303e3f1d7
+2026/02/12 19:44:48 [WARN] Connecting to the wire...
+2026/02/12 19:44:48 [INFO] Tor mode enabled. Configuring SOCKS5 tunnel...
+2026/02/12 19:44:48 [INFO] Establishing connection to: ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws
+2026/02/12 19:44:48 [WARN] Connected successfully!
+2026/02/12 19:44:57 [INFO] [1;3;38;2;93;167;255m[SYSTEM] AES Key generated. You are the room Host.[0m
+2026/02/12 19:45:21 [WARN] Connecting to the wire...
+2026/02/12 19:45:21 [INFO] Tor mode enabled. Configuring SOCKS5 tunnel...
+2026/02/12 19:45:21 [INFO] Establishing connection to: ws://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/ws
+2026/02/12 19:45:21 [WARN] Connected successfully!
+2026/02/12 19:45:25 [INFO] [1;38;2;0;217;163m[+] AES Key established. Chat encryption ENABLED.[0m
+2026/02/12 19:45:29 [INFO] [1;3;38;2;93;167;255m[SYSTEM] You have been promoted to room HOST.[0m

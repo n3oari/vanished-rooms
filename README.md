@@ -72,7 +72,7 @@ http://wuopotpej2uap77giiz7xlpw5mqjdcmpjftmnxsprp6thjib2oyunoid.onion/
 
 <p align="center">
    <br>
-  <img src="img/onion.png" alt="onion " width="700">
+  <img src="img/onion2.png" alt="onion " width="700">
 </p>
 
 <br>
