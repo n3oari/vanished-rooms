@@ -90,7 +90,6 @@ var Banner2 string = `
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠛⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`
 
-// Estilos para los banners
 var (
 	bannerStyle = lipgloss.NewStyle().
 			Foreground(ColorPrimary).
@@ -102,11 +101,6 @@ var (
 			MarginTop(1)
 )
 
-func GetRandomBanner() string {
-	index := rand.IntN(len(Banners))
-	return bannerStyle.Render(Banners[index])
-}
-
 func PrintRandomBanner() {
 	banner := GetRandomBanner()
 	subtitle := subtitleStyle.Render("🔐 Ephemeral. Encrypted. Anonymous.")
@@ -114,4 +108,22 @@ func PrintRandomBanner() {
 	fmt.Println(banner)
 	fmt.Println(subtitle)
 	fmt.Println()
+}
+
+func GetRandomColor() lipgloss.Color {
+	r := rand.IntN(256)
+	g := rand.IntN(256)
+	b := rand.IntN(256)
+
+	return lipgloss.Color(fmt.Sprintf("#%02X%02X%02X", r, g, b))
+}
+
+func GetRandomBanner() string {
+	index := rand.IntN(len(Banners))
+
+	dynamicStyle := lipgloss.NewStyle().
+		Foreground(GetRandomColor()).
+		Bold(true)
+
+	return dynamicStyle.Render(Banners[index])
 }

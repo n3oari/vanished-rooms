@@ -23,6 +23,7 @@ type Rooms struct {
 	PasswordHash []byte `db:"password_hash"`
 	Salt         []byte `db:"salt"`
 	Private      bool   `db:"private"`
+	MaxUsers     int    `db:"max_users"`
 }
 
 type Participants struct {

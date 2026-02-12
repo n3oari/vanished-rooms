@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Colores de la aplicación
 var (
 	ColorPrimary   = lipgloss.Color("#7D56F4")
 	ColorSuccess   = lipgloss.Color("#00D9A3")
@@ -200,14 +199,12 @@ func RenderHelpMenu() string {
 	sb.WriteString(borderStyle.Render("│") + titleStyle.Render("VANISHED ROOMS - COMMAND MENU") + borderStyle.Render("│") + "\n")
 	sb.WriteString(borderStyle.Render("├"+strings.Repeat("─", 58)+"┤") + "\n\n")
 
-	// ROOM CREATION
 	sb.WriteString(sectionStyle.Render(" ROOM CREATION") + "\n")
 	sb.WriteString(commandStyle.Render("/create -n <name> --public") + "\n")
 	sb.WriteString(descStyle.Render("Create a room visible to everyone") + "\n\n")
 	sb.WriteString(commandStyle.Render("/create -n <name> -p <pass> --private") + "\n")
 	sb.WriteString(descStyle.Render("Secure room (min 8 chars password)") + "\n\n")
 
-	// NAVIGATION
 	sb.WriteString(sectionStyle.Render("NAVIGATION") + "\n")
 	sb.WriteString(commandStyle.Render("/rooms") + "\n")
 	sb.WriteString(descStyle.Render("List all public rooms") + "\n\n")
@@ -218,7 +215,6 @@ func RenderHelpMenu() string {
 	sb.WriteString(commandStyle.Render("/leave-room") + "\n")
 	sb.WriteString(descStyle.Render("Exit current room") + "\n\n")
 
-	// SYSTEM
 	sb.WriteString(sectionStyle.Render(" SYSTEM") + "\n")
 	sb.WriteString(commandStyle.Render("/users") + "\n")
 	sb.WriteString(descStyle.Render("List participants in room") + "\n\n")

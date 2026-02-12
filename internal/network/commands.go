@@ -130,7 +130,6 @@ func (sv *Server) handleJoinCommand(conn *websocket.Conn, User *storage.Users, m
 		return
 	}
 
-	// JoinRoom hace todas las validaciones internamente
 	roomID, hostID, err := sv.SQLiteRepository.JoinRoom(User.UUID, roomName, roomPass)
 	if err != nil {
 		// Mensajes específicos según el error
@@ -189,7 +188,6 @@ func (sv *Server) handleUsersCommand(conn *websocket.Conn, user *storage.Users) 
 
 	users, _ := sv.SQLiteRepository.ListAllUsersInRoom(user.CurrentRoomUUID)
 
-	// Convertir a slice de strings
 	usernames := make([]string, len(users))
 	for i, u := range users {
 		usernames[i] = u.Username
@@ -202,7 +200,6 @@ func (sv *Server) handleUsersCommand(conn *websocket.Conn, user *storage.Users) 
 func (sv *Server) handleRoomsCommand(conn *websocket.Conn) {
 	rooms, _ := sv.SQLiteRepository.ListAllRooms()
 
-	// Convertir a slice de strings
 	roomNames := make([]string, len(rooms))
 	for i, room := range rooms {
 		roomNames[i] = room.Name

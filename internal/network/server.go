@@ -118,7 +118,6 @@ func (sv *Server) sendAutoRooms(conn *websocket.Conn) {
 		return
 	}
 
-	// Usar la función de estilo RenderRoomList
 	formattedList := fmt.Sprintf("%s:\n%s", EvSystemInfo, ui.RenderRoomList(rooms))
 	conn.WriteMessage(websocket.TextMessage, []byte(formattedList))
 }
